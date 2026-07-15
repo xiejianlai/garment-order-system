@@ -59,9 +59,9 @@ model SysUser {
 
   // 公司内用户名唯一
   @@unique([companyId, username], map: "uk_company_username")
-  @@index([companyId], map: "idx_company_id")
-  @@index([role], map: "idx_role")
-  @@index([wxOpenid], map: "idx_wx_openid")
+  @@index([companyId], map: "idx_sys_user_company_id")
+  @@index([role], map: "idx_sys_user_role")
+  @@index([wxOpenid], map: "idx_sys_user_wx_openid")
   @@map("sys_user")
 }
 
@@ -85,7 +85,7 @@ model Customer {
   users   SysUser[]
   orders  Order[]
 
-  @@index([companyId], map: "idx_company_id")
+  @@index([companyId], map: "idx_customer_company_id")
   @@map("customer")
 }
 
@@ -111,7 +111,7 @@ model Factory {
   trimOrders OrderTrim[]
   fabricOrders OrderFabric[]
 
-  @@index([companyId], map: "idx_company_id")
+  @@index([companyId], map: "idx_factory_company_id")
   @@map("factory")
 }
 
@@ -163,7 +163,7 @@ model Order {
 
   // 公司内订单号唯一
   @@unique([companyId, orderNo], map: "uk_company_order_no")
-  @@index([companyId], map: "idx_company_id")
+  @@index([companyId], map: "idx_order_company_id")
   @@index([customerId], map: "idx_customer_id")
   @@index([coordinatorId], map: "idx_coordinator_id")
   @@index([merchandiserId], map: "idx_merchandiser_id")
@@ -189,7 +189,7 @@ model OrderColorSize {
   order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@unique([orderId, color, size], map: "uk_order_color_size")
-  @@index([orderId], map: "idx_order_id")
+  @@index([orderId], map: "idx_cs_order_id")
   @@map("order_color_size")
 }
 
@@ -221,7 +221,7 @@ model OrderFabric {
   order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   supplier Factory? @relation(fields: [supplierId], references: [id])
 
-  @@index([orderId], map: "idx_order_id")
+  @@index([orderId], map: "idx_fabric_order_id")
   @@map("order_fabric")
 }
 
@@ -273,8 +273,8 @@ model OrderTrim {
   order    Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
   supplier Factory?  @relation(fields: [supplierId], references: [id])
 
-  @@index([orderId], map: "idx_order_id")
-  @@index([supplierId], map: "idx_supplier_id")
+  @@index([orderId], map: "idx_trim_order_id")
+  @@index([supplierId], map: "idx_trim_supplier_id")
   @@index([isReady], map: "idx_is_ready")
   @@map("order_trim")
 }
@@ -302,8 +302,8 @@ model OrderTaStage {
   order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@unique([orderId, stageCode], map: "uk_order_stage")
-  @@index([orderId], map: "idx_order_id")
-  @@index([status], map: "idx_status")
+  @@index([orderId], map: "idx_ta_order_id")
+  @@index([status], map: "idx_ta_status")
   @@map("order_ta_stage")
 }
 
@@ -329,10 +329,10 @@ model OperationLog {
   order Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   user  SysUser @relation("LogUser", fields: [userId], references: [id])
 
-  @@index([orderId], map: "idx_order_id")
-  @@index([userId], map: "idx_user_id")
-  @@index([module], map: "idx_module")
-  @@index([createdAt], map: "idx_created_at")
+  @@index([orderId], map: "idx_log_order_id")
+  @@index([userId], map: "idx_log_user_id")
+  @@index([module], map: "idx_log_module")
+  @@index([createdAt], map: "idx_log_created_at")
   @@map("operation_log")
 }
 
@@ -352,7 +352,7 @@ model OrderFile {
   order    Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   uploader SysUser @relation("FileUploadedBy", fields: [uploadedBy], references: [id])
 
-  @@index([orderId], map: "idx_order_id")
+  @@index([orderId], map: "idx_file_order_id")
   @@index([fileType], map: "idx_file_type")
   @@map("order_file")
 }
