@@ -37,7 +37,8 @@
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.1",
     "rxjs": "^7.8.1",
-    "socket.io": "^4.7.0"
+    "socket.io": "^4.7.0",
+    "typescript": "^5.3.3"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.3.0",
@@ -47,8 +48,7 @@
     "@types/passport-jwt": "^4.0.0",
     "prisma": "^5.8.0",
     "ts-node": "^10.9.2",
-    "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.3.3"
+    "tsconfig-paths": "^4.2.0"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
