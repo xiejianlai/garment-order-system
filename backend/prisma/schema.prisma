@@ -1,0 +1,358 @@
+// Prisma Schema — 外贸服装订单管理系统 v2
+// 数据库: MySQL 8.0
+// 核心变更: 多公司数据隔离、理单/跟单角色、自由输入名字分配、面料管理、行背景色
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== 公司表（多公司数据隔离） ====================
+model Company {
+  id          BigInt    @id @default(autoincrement())
+  code        String    @unique @db.VarChar(20)   // 公司代码，如 DEMO01
+  name        String    @db.VarChar(100)           // 公司名称
+  phone       String?   @db.VarChar(20)
+  address     String?   @db.VarChar(300)
+  status      Int       @default(1) @db.TinyInt    // 0=禁用 1=启用
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  users       SysUser[]
+  customers   Customer[]
+  factories   Factory[]
+  orders      Order[]
+
+  @@map("company")
+}
+
+// ==================== 用户表 ====================
+model SysUser {
+  id           BigInt    @id @default(autoincrement())
+  companyId    BigInt    @map("company_id")
+  username     String    @db.VarChar(50)
+  passwordHash String    @map("password_hash") @db.VarChar(255)
+  realName     String    @map("real_name") @db.VarChar(50)
+  role         String    @db.VarChar(20)   // admin | coordinator | merchandiser | customer
+  phone        String?   @db.VarChar(20)
+  email        String?   @db.VarChar(100)
+  avatarColor  String?   @map("avatar_color") @db.VarChar(20)  // 头像颜色值，如 #1677ff
+  customerId   BigInt?   @map("customer_id")   // 客户角色绑定客户ID
+  wxOpenid     String?   @map("wx_openid") @db.VarChar(100)
+  status       Int       @default(1) @db.TinyInt   // 0=禁用 1=启用
+  lastLoginAt  DateTime? @map("last_login_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  // 关联
+  company         Company          @relation(fields: [companyId], references: [id])
+  customer        Customer?        @relation(fields: [customerId], references: [id])
+  ordersCreated   Order[]          @relation("OrderCreatedBy")
+  ordersCoordinated Order[]        @relation("OrderCoordinator")
+  ordersMerchandised Order[]       @relation("OrderMerchandiser")
+  logs            OperationLog[]   @relation("LogUser")
+  filesUploaded   OrderFile[]      @relation("FileUploadedBy")
+
+  // 公司内用户名唯一
+  @@unique([companyId, username], map: "uk_company_username")
+  @@index([companyId], map: "idx_company_id")
+  @@index([role], map: "idx_role")
+  @@index([wxOpenid], map: "idx_wx_openid")
+  @@map("sys_user")
+}
+
+// ==================== 客户表 ====================
+model Customer {
+  id            BigInt    @id @default(autoincrement())
+  companyId     BigInt    @map("company_id")
+  customerCode  String    @unique @map("customer_code") @db.VarChar(20)
+  customerName  String    @map("customer_name") @db.VarChar(100)
+  contactPerson String?   @map("contact_person") @db.VarChar(50)
+  phone         String?   @db.VarChar(20)
+  email         String?   @db.VarChar(100)
+  country       String?   @db.VarChar(50)
+  address       String?   @db.VarChar(300)
+  remark        String?   @db.Text
+  status        Int       @default(1) @db.TinyInt
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  company Company @relation(fields: [companyId], references: [id])
+  users   SysUser[]
+  orders  Order[]
+
+  @@index([companyId], map: "idx_company_id")
+  @@map("customer")
+}
+
+// ==================== 工厂/供应商表 ====================
+model Factory {
+  id            BigInt    @id @default(autoincrement())
+  companyId     BigInt    @map("company_id")
+  factoryCode   String    @unique @map("factory_code") @db.VarChar(20)
+  factoryName   String    @map("factory_name") @db.VarChar(100)
+  factoryType   String    @map("factory_type") @db.VarChar(20) // factory | supplier
+  contactPerson String?   @map("contact_person") @db.VarChar(50)
+  phone         String?   @db.VarChar(20)
+  email         String?   @db.VarChar(100)
+  address       String?   @db.VarChar(300)
+  capability    String?   @db.VarChar(200)
+  remark        String?   @db.Text
+  status        Int       @default(1) @db.TinyInt
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  company    Company     @relation(fields: [companyId], references: [id])
+  orders     Order[]
+  trimOrders OrderTrim[]
+  fabricOrders OrderFabric[]
+
+  @@index([companyId], map: "idx_company_id")
+  @@map("factory")
+}
+
+// ==================== 订单表 ====================
+model Order {
+  id                BigInt    @id @default(autoincrement())
+  companyId         BigInt    @map("company_id")
+  orderNo           String    @map("order_no") @db.VarChar(30)
+  customerId        BigInt    @map("customer_id")
+  customerName      String    @map("customer_name") @db.VarChar(100)
+  styleNo           String    @map("style_no") @db.VarChar(50)
+  styleName         String?   @map("style_name") @db.VarChar(100)
+  season            String?   @db.VarChar(20)
+  category          String?   @db.VarChar(50)
+  garmentImageUrl   String?   @map("garment_image_url") @db.VarChar(500)
+  totalQty          Int       @default(0) @map("total_qty")
+  deliveryDate      DateTime  @map("delivery_date") @db.Date
+  factoryId         BigInt?   @map("factory_id")
+  factoryName       String?   @map("factory_name") @db.VarChar(100)
+
+  // 理单分配（自由输入名字 + 可选关联已注册用户ID）
+  coordinatorId     BigInt?   @map("coordinator_id")
+  coordinatorName   String?   @map("coordinator_name") @db.VarChar(50)
+
+  // 跟单分配（自由输入名字 + 可选关联已注册用户ID）
+  merchandiserId    BigInt?   @map("merchandiser_id")
+  merchandiserName  String?   @map("merchandiser_name") @db.VarChar(50)
+
+  orderStatus       String    @default("draft") @map("order_status") @db.VarChar(20)
+  // draft | confirmed | in_progress | shipped | completed | cancelled
+  remark            String?   @db.Text
+  createdBy         BigInt    @map("created_by")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  // 关联
+  company     Company          @relation(fields: [companyId], references: [id])
+  customer    Customer         @relation(fields: [customerId], references: [id])
+  factory     Factory?         @relation(fields: [factoryId], references: [id])
+  coordinator SysUser?         @relation("OrderCoordinator", fields: [coordinatorId], references: [id])
+  merchandiser SysUser?        @relation("OrderMerchandiser", fields: [merchandiserId], references: [id])
+  creator     SysUser          @relation("OrderCreatedBy", fields: [createdBy], references: [id])
+  colorSizes  OrderColorSize[]
+  fabrics     OrderFabric[]
+  trims       OrderTrim[]
+  taStages    OrderTaStage[]
+  logs        OperationLog[]
+  files       OrderFile[]
+
+  // 公司内订单号唯一
+  @@unique([companyId, orderNo], map: "uk_company_order_no")
+  @@index([companyId], map: "idx_company_id")
+  @@index([customerId], map: "idx_customer_id")
+  @@index([coordinatorId], map: "idx_coordinator_id")
+  @@index([merchandiserId], map: "idx_merchandiser_id")
+  @@index([orderStatus], map: "idx_order_status")
+  @@index([deliveryDate], map: "idx_delivery_date")
+  @@map("orders")
+}
+
+// ==================== 颜色尺码矩阵表 ====================
+model OrderColorSize {
+  id        BigInt   @id @default(autoincrement())
+  orderId   BigInt   @map("order_id")
+  color     String   @db.VarChar(50)
+  colorCode String?  @map("color_code") @db.VarChar(20)
+  size      String   @db.VarChar(20)
+  sizeGroup String?  @map("size_group") @db.VarChar(20)
+  quantity  Int      @default(0)
+  rowColor  String?  @map("row_color") @db.VarChar(20)  // 行背景色
+  sortOrder Int      @default(0) @map("sort_order")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, color, size], map: "uk_order_color_size")
+  @@index([orderId], map: "idx_order_id")
+  @@map("order_color_size")
+}
+
+// ==================== 面料进度表 ====================
+model OrderFabric {
+  id                BigInt   @id @default(autoincrement())
+  orderId           BigInt   @map("order_id")
+  fabricName        String   @map("fabric_name") @db.VarChar(50)
+  color             String?  @db.VarChar(100)     // 面料颜色
+  specification     String?  @db.VarChar(100)
+  usagePerPiece     Decimal? @map("usage_per_piece") @db.Decimal(10, 3)
+  totalDemand       Int?     @default(0) @map("total_demand")
+  supplierId        BigInt?  @map("supplier_id")
+  supplierName      String?  @map("supplier_name") @db.VarChar(100)
+
+  // 面料进度
+  status            String   @default("not_ordered") @db.VarChar(20)
+  // not_ordered | ordered | producing | shipped | received
+  qtyCheckStatus    String   @default("pending") @map("qty_check_status") @db.VarChar(20)
+  // pending | short | sufficient | verified
+  plannedDate       DateTime? @map("planned_date") @db.Date
+  actualDate        DateTime? @map("actual_date") @db.Date
+  notes             String?  @db.VarChar(300)
+
+  createdBy         BigInt   @map("created_by")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  supplier Factory? @relation(fields: [supplierId], references: [id])
+
+  @@index([orderId], map: "idx_order_id")
+  @@map("order_fabric")
+}
+
+// ==================== 辅料进度表 ====================
+model OrderTrim {
+  id                  BigInt   @id @default(autoincrement())
+  orderId             BigInt   @map("order_id")
+  trimName            String   @map("trim_name") @db.VarChar(50)
+  trimCategory        String   @map("trim_category") @db.VarChar(20)
+  // label | zipper | button | thread | packaging | hangtag | care_label | other
+  color               String?  @db.VarChar(100)     // 辅料颜色
+  specification       String?  @db.VarChar(100)
+  usagePerPiece       Decimal  @map("usage_per_piece") @db.Decimal(10, 3)
+  unit                String   @default("pcs") @db.VarChar(10)
+  totalDemand         Int      @default(0) @map("total_demand")
+  supplierId          BigInt?  @map("supplier_id")
+  supplierName        String?  @map("supplier_name") @db.VarChar(100)
+
+  // 打样阶段
+  samplingStatus      String   @default("pending") @map("sampling_status") @db.VarChar(30)
+  // pending | in_sampling | sent_for_approval | approved | rejected
+  samplingSentDate    DateTime? @map("sampling_sent_date") @db.Date
+  samplingApprovedDate DateTime? @map("sampling_approved_date") @db.Date
+  samplingRemark      String?  @map("sampling_remark") @db.VarChar(300)
+
+  // 大货阶段
+  bulkPoNo            String?  @map("bulk_po_no") @db.VarChar(30)
+  bulkPoStatus        String   @default("not_ordered") @map("bulk_po_status") @db.VarChar(20)
+  // not_ordered | ordered | producing | shipped | received
+  bulkPoDate          DateTime? @map("bulk_po_date") @db.Date
+  bulkEtd             DateTime? @map("bulk_etd") @db.Date
+  bulkEta             DateTime? @map("bulk_eta") @db.Date
+  receivedQty         Int?     @map("received_qty")
+  qtyCheckStatus      String   @default("pending") @map("qty_check_status") @db.VarChar(20)
+  // pending | short | sufficient
+  inspectionResult    String   @default("pending") @map("inspection_result") @db.VarChar(20)
+  // pending | pass | fail
+  inspectionNote      String?  @map("inspection_note") @db.VarChar(300)
+
+  // 齐套判定
+  isReady             Int      @default(0) @map("is_ready") @db.TinyInt
+  readyDate           DateTime? @map("ready_date")
+
+  remark              String?  @db.Text
+  createdBy           BigInt   @map("created_by")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  order    Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  supplier Factory?  @relation(fields: [supplierId], references: [id])
+
+  @@index([orderId], map: "idx_order_id")
+  @@index([supplierId], map: "idx_supplier_id")
+  @@index([isReady], map: "idx_is_ready")
+  @@map("order_trim")
+}
+
+// ==================== T&A 生产进度表 ====================
+model OrderTaStage {
+  id             BigInt   @id @default(autoincrement())
+  orderId        BigInt   @map("order_id")
+  stageCategory  String   @map("stage_category") @db.VarChar(20)
+  // sampling | production | inspection | shipping
+  stageCode      String   @map("stage_code") @db.VarChar(30)
+  stageName      String   @map("stage_name") @db.VarChar(50)
+  status         String   @default("not_started") @db.VarChar(20)
+  // not_started | in_progress | completed | delayed
+  plannedDate    DateTime? @map("planned_date") @db.Date
+  startDate      DateTime? @map("start_date") @db.Date      // 开始日期
+  actualDate     DateTime? @map("actual_date") @db.Date      // 实际完成日期
+  completionPct  Int      @default(0) @map("completion_pct")
+  remark         String?  @db.VarChar(300)
+  sortOrder      Int      @default(0) @map("sort_order")
+  updatedBy      BigInt?  @map("updated_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  order   Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, stageCode], map: "uk_order_stage")
+  @@index([orderId], map: "idx_order_id")
+  @@index([status], map: "idx_status")
+  @@map("order_ta_stage")
+}
+
+// ==================== 操作日志表 ====================
+model OperationLog {
+  id             BigInt   @id @default(autoincrement())
+  orderId        BigInt   @map("order_id")
+  userId         BigInt   @map("user_id")
+  userName       String   @map("user_name") @db.VarChar(50)
+  userRole       String   @map("user_role") @db.VarChar(20)
+  module         String   @db.VarChar(20)
+  // order | color_size | fabric | trim | ta_stage | file | assignment
+  action         String   @db.VarChar(20)
+  // create | update | delete | status_change
+  targetId       BigInt?  @map("target_id")
+  fieldName      String?  @map("field_name") @db.VarChar(50)
+  oldValue       String?  @map("old_value") @db.Text
+  newValue       String?  @map("new_value") @db.Text
+  changeSummary  String?  @map("change_summary") @db.Text
+  ipAddress      String?  @map("ip_address") @db.VarChar(45)
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  order Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  SysUser @relation("LogUser", fields: [userId], references: [id])
+
+  @@index([orderId], map: "idx_order_id")
+  @@index([userId], map: "idx_user_id")
+  @@index([module], map: "idx_module")
+  @@index([createdAt], map: "idx_created_at")
+  @@map("operation_log")
+}
+
+// ==================== 订单文件表 ====================
+model OrderFile {
+  id         BigInt   @id @default(autoincrement())
+  orderId    BigInt   @map("order_id")
+  fileName   String   @map("file_name") @db.VarChar(200)
+  fileUrl    String   @map("file_url") @db.VarChar(500)
+  fileType   String   @map("file_type") @db.VarChar(30)
+  // garment_image | tech_pack | size_spec | trim_approval | inspection_report | shipping_doc | other
+  fileSize   Int?     @map("file_size")
+  mimeType   String?  @map("mime_type") @db.VarChar(50)
+  uploadedBy BigInt   @map("uploaded_by")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  order    Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  uploader SysUser @relation("FileUploadedBy", fields: [uploadedBy], references: [id])
+
+  @@index([orderId], map: "idx_order_id")
+  @@index([fileType], map: "idx_file_type")
+  @@map("order_file")
+}

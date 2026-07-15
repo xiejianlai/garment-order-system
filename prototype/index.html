@@ -1,0 +1,2932 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>外贸服装订单系统 - 原型体验</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--primary:#1677ff;--primary-light:#e6f0ff;--success:#52c41a;--warning:#faad14;--danger:#ff4d4f;--text:#262626;--text-2:#8c8c8c;--text-3:#bfbfbf;--bg:#f5f5f5;--card:#fff;--border:#f0f0f0;--radius:12px;--red:#e8312f;--green:#00a870}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:#e8e8e8;color:var(--text);display:flex;justify-content:center;min-height:100vh}
+.phone{width:390px;min-height:100vh;background:var(--bg);position:relative;overflow:hidden;box-shadow:0 0 40px rgba(0,0,0,.12);display:flex;flex-direction:column}
+.statusbar{height:44px;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:600;flex-shrink:0;position:relative;z-index:10}
+.statusbar .back{position:absolute;left:16px;font-size:22px;color:var(--primary);cursor:pointer}
+.statusbar .right-btn{position:absolute;right:16px;font-size:14px;color:var(--primary);cursor:pointer}
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
+.page{display:none;min-height:100%}
+.page.active{display:block}
+
+/* Login */
+.login-page{background:linear-gradient(135deg,#1677ff 0%,#0958d9 100%);min-height:100%;display:flex;flex-direction:column;align-items:center;padding:60px 32px 40px}
+.login-logo{width:80px;height:80px;background:rgba(255,255,255,.15);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:40px;margin-bottom:16px}
+.login-title{color:#fff;font-size:24px;font-weight:700;margin-bottom:6px}
+.login-sub{color:rgba(255,255,255,.7);font-size:14px;margin-bottom:40px}
+.login-card{background:#fff;border-radius:16px;padding:28px 24px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,.1)}
+.login-card h3{font-size:16px;margin-bottom:20px;color:var(--text)}
+.role-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.role-item{border:2px solid var(--border);border-radius:10px;padding:14px 10px;text-align:center;cursor:pointer;transition:all .2s}
+.role-item.active{border-color:var(--primary);background:var(--primary-light)}
+.role-item .icon{font-size:28px;margin-bottom:6px}
+.role-item .name{font-size:13px;font-weight:600}
+.role-item .desc{font-size:11px;color:var(--text-2);margin-top:2px}
+.input-group{margin-bottom:14px}
+.input-group label{font-size:13px;color:var(--text-2);margin-bottom:6px;display:block}
+.input-group input{width:100%;height:44px;border:1px solid var(--border);border-radius:8px;padding:0 14px;font-size:15px;outline:none;transition:border .2s}
+.input-group input:focus{border-color:var(--primary)}
+.btn-primary{width:100%;height:46px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;transition:opacity .2s}
+.btn-primary:active{opacity:.85}
+.login-hint{text-align:center;margin-top:16px;font-size:12px;color:var(--text-3)}
+.wx-login-btn{width:100%;height:46px;background:#07c160;color:#fff;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;margin-top:10px}
+
+/* Order List */
+.order-list-header{background:var(--card);padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.search-box{flex:1;height:36px;background:var(--bg);border-radius:18px;display:flex;align-items:center;padding:0 14px;gap:8px}
+.search-box input{flex:1;border:none;background:transparent;font-size:14px;outline:none}
+.add-btn{width:36px;height:36px;background:var(--primary);border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;cursor:pointer;flex-shrink:0}
+.filter-tabs{display:flex;background:var(--card);padding:0 16px;gap:6px;overflow-x:auto;border-bottom:1px solid var(--border);height:40px;align-items:center}
+.filter-tab{padding:4px 14px;border-radius:16px;font-size:13px;color:var(--text-2);white-space:nowrap;cursor:pointer;transition:all .2s}
+.filter-tab.active{background:var(--primary);color:#fff}
+.order-list{padding:12px}
+.order-card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:10px;cursor:pointer;transition:box-shadow .2s}
+.order-card:active{box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.order-card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.order-no{font-size:15px;font-weight:600}
+.order-status{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}
+.st-draft{background:#f0f0f0;color:#8c8c8c}
+.st-confirmed{background:#e6f0ff;color:#1677ff}
+.st-in_progress{background:#fff7e6;color:#fa8c16}
+.st-shipped{background:#f6ffed;color:#52c41a}
+.st-completed{background:#f6ffed;color:#389e0d}
+.st-cancelled{background:#fff2f0;color:#ff4d4f}
+.order-info{display:flex;gap:12px}
+.order-img{width:64px;height:64px;border-radius:8px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:28px;flex-shrink:0}
+.order-meta{flex:1;display:flex;flex-direction:column;gap:4px}
+.order-meta .row{font-size:13px;color:var(--text-2);display:flex;gap:4px}
+.order-meta .row span{color:var(--text)}
+.order-meta .row .label{color:var(--text-3);min-width:56px}
+.qty-badge{font-size:12px;color:var(--primary);font-weight:600}
+.delivery-warning{color:var(--red);font-weight:500}
+.list-footer{text-align:center;padding:16px;font-size:12px;color:var(--text-3)}
+
+/* Order Detail */
+.detail-header{background:var(--card);padding:16px;border-bottom:1px solid var(--border)}
+.detail-order-no{font-size:18px;font-weight:700;margin-bottom:4px}
+.detail-style{font-size:13px;color:var(--text-2);margin-bottom:12px}
+.detail-stats{display:flex;gap:12px}
+.stat-item{flex:1;text-align:center;background:var(--bg);border-radius:8px;padding:10px}
+.stat-item .val{font-size:18px;font-weight:700;color:var(--primary)}
+.stat-item .label{font-size:11px;color:var(--text-2);margin-top:2px}
+.detail-tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:5}
+.detail-tab{flex:1;text-align:center;padding:14px 0;font-size:14px;color:var(--text-2);cursor:pointer;position:relative;transition:color .2s}
+.detail-tab.active{color:var(--primary);font-weight:600}
+.detail-tab.active::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:32px;height:3px;background:var(--primary);border-radius:2px}
+.tab-content{padding:12px}
+
+/* Color Size Matrix */
+.section-card{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:10px}
+.section-title{font-size:15px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.matrix-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:8px;position:relative}
+.matrix-scroll::-webkit-scrollbar{height:6px}
+.matrix-scroll::-webkit-scrollbar-track{background:var(--bg);border-radius:3px}
+.matrix-scroll::-webkit-scrollbar-thumb{background:#ccc;border-radius:3px}
+.matrix-table{border-collapse:collapse;font-size:13px;min-width:100%}
+.matrix-table th{background:var(--bg);padding:8px 10px;text-align:center;font-weight:500;color:var(--text-2);border:1px solid var(--border);white-space:nowrap;position:sticky;top:0;z-index:1}
+.matrix-table th:first-child{position:sticky;left:0;z-index:3;background:var(--bg)}
+.matrix-table td{padding:8px 10px;text-align:center;border:1px solid var(--border);white-space:nowrap}
+.matrix-table td:first-child{position:sticky;left:0;z-index:2;min-width:90px}
+.matrix-table .color-cell{font-weight:600;background:var(--bg)}
+.matrix-table .total-cell{font-weight:600;background:#fafafa}
+.matrix-table .qty-input{width:50px;text-align:center;border:1px solid var(--border);border-radius:4px;padding:4px;font-size:13px;outline:none}
+.row-color-dot{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:middle;margin-right:4px;border:1px solid rgba(0,0,0,0.1);cursor:pointer}
+.row-color-picker{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;padding:6px;background:var(--card);border:1px solid var(--border);border-radius:8px;position:absolute;z-index:10;box-shadow:0 2px 8px rgba(0,0,0,0.12)}
+.row-color-swatch{width:22px;height:22px;border-radius:4px;cursor:pointer;border:2px solid transparent;transition:border-color 0.15s}
+.row-color-swatch:hover{border-color:var(--text-3)}
+.row-color-swatch.selected{border-color:var(--primary);border-width:2px}
+.row-color-clear{font-size:11px;color:var(--text-3);cursor:pointer;padding:2px 6px;border:1px solid var(--border);border-radius:4px}
+
+/* Trims */
+.trim-ready-banner{border-radius:var(--radius);padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
+.trim-ready-banner.all-ready{background:linear-gradient(135deg,#f6ffed,#d9f7be)}
+.trim-ready-banner.not-ready{background:linear-gradient(135deg,#fff2f0,#ffccc7)}
+.trim-ready-banner .icon{font-size:32px}
+.trim-ready-banner .info{flex:1}
+.trim-ready-banner .title{font-size:14px;font-weight:600}
+.trim-ready-banner .desc{font-size:12px;color:var(--text-2)}
+.trim-ready-banner .check-btn{padding:6px 14px;background:var(--primary);color:#fff;border-radius:16px;font-size:12px;cursor:pointer;white-space:nowrap}
+.trim-item{background:var(--card);border-radius:var(--radius);padding:14px;margin-bottom:8px}
+.trim-item-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.trim-name{font-size:14px;font-weight:600}
+.trim-cat{font-size:11px;padding:2px 6px;border-radius:4px;background:var(--bg);color:var(--text-2)}
+.trim-status-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.trim-step{flex:1;min-width:70px;text-align:center}
+.trim-step .step-label{font-size:10px;color:var(--text-3);margin-bottom:4px}
+.trim-step .step-val{font-size:12px;padding:3px 6px;border-radius:4px;font-weight:500}
+.trim-step .step-date{font-size:9px;color:var(--text-3);margin-top:3px}
+.ts-pending{background:#f5f5f5;color:#bfbfbf}
+.ts-in_sampling{background:#e6f0ff;color:#1677ff}
+.ts-sent_for_approval{background:#fff7e6;color:#fa8c16}
+.ts-approved{background:#f6ffed;color:#52c41a}
+.ts-rejected{background:#fff2f0;color:#ff4d4f}
+.ts-not_ordered{background:#f5f5f5;color:#bfbfbf}
+.ts-ordered{background:#e6f0ff;color:#1677ff}
+.ts-producing{background:#fff7e6;color:#fa8c16}
+.ts-shipped{background:#e6f0ff;color:#0958d9}
+.ts-received{background:#f6ffed;color:#52c41a}
+.ts-pass{background:#f6ffed;color:#52c41a}
+.ts-fail{background:#fff2f0;color:#ff4d4f}
+.ts-short{background:#fff2f0;color:#ff4d4f}
+.ts-sufficient{background:#f6ffed;color:#52c41a}
+.trim-meta{display:flex;gap:16px;font-size:12px;color:var(--text-2);padding-top:8px;border-top:1px solid var(--border)}
+.trim-meta span b{color:var(--text)}
+.trim-ready-tag{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}
+.tag-ready{background:#f6ffed;color:#52c41a}
+.tag-not-ready{background:#fff2f0;color:#ff4d4f}
+
+/* T&A */
+.ta-group{margin-bottom:16px}
+.ta-group-title{font-size:13px;font-weight:600;color:var(--text-2);margin-bottom:8px;padding-left:4px;display:flex;align-items:center;gap:6px}
+.ta-group-title .dot{width:8px;height:8px;border-radius:50%}
+.ta-stage{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:10px;padding:12px 14px;margin-bottom:6px;cursor:pointer;transition:background .2s}
+.ta-stage:active{background:#fafafa}
+.ta-stage-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.ta-icon-not_started{background:#f5f5f5;color:#bfbfbf}
+.ta-icon-in_progress{background:#fff7e6;color:#fa8c16}
+.ta-icon-completed{background:#f6ffed;color:#52c41a}
+.ta-icon-delayed{background:#fff2f0;color:#ff4d4f}
+.ta-stage-info{flex:1}
+.ta-stage-name{font-size:14px;font-weight:500}
+.ta-stage-date{font-size:11px;color:var(--text-3);margin-top:2px}
+.ta-stage-arrow{font-size:18px;color:var(--text-3)}
+.ta-progress-bar{height:4px;background:var(--border);border-radius:2px;margin-top:6px;overflow:hidden}
+.ta-progress-fill{height:100%;border-radius:2px;transition:width .3s}
+
+/* Logs */
+.log-list{padding:0 4px}
+.log-item{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)}
+.log-item:last-child{border-bottom:none}
+.log-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;flex-shrink:0;font-weight:500}
+.log-body{flex:1}
+.log-top{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.log-user{font-size:13px;font-weight:600}
+.log-role{font-size:10px;padding:1px 5px;border-radius:3px}
+.log-role-admin{background:#e6f0ff;color:#1677ff}
+.log-role-merchandiser{background:#f6ffed;color:#52c41a}
+.log-role-factory{background:#fff7e6;color:#fa8c16}
+.log-role-coordinator{background:#e6fffb;color:#13c2c2}
+.log-role-customer{background:#f9f0ff;color:#722ed1}
+.log-time{font-size:11px;color:var(--text-3);margin-left:auto}
+.log-content{font-size:13px;color:var(--text-2);line-height:1.5}
+.log-content .field{color:var(--primary);font-weight:500}
+.log-content .old-val{text-decoration:line-through;color:var(--text-3)}
+.log-content .new-val{color:var(--success);font-weight:500}
+
+/* Order Create */
+.form-section{background:var(--card);border-radius:var(--radius);padding:16px;margin-bottom:10px}
+.form-section-title{font-size:14px;font-weight:600;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border)}
+.form-row{display:flex;gap:12px;margin-bottom:12px}
+.form-item{flex:1}
+.form-item label{font-size:12px;color:var(--text-2);margin-bottom:4px;display:block}
+.form-item input,.form-item select{width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px;outline:none;background:var(--card)}
+.form-item input:focus,.form-item select:focus{border-color:var(--primary)}
+.combo-box{position:relative}
+.combo-box input{width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 32px 0 12px;font-size:14px;outline:none;background:var(--card)}
+.combo-box input:focus{border-color:var(--primary)}
+.combo-box::after{content:'▾';position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--text-3);pointer-events:none}
+.form-item-full{margin-bottom:12px}
+.form-item-full label{font-size:12px;color:var(--text-2);margin-bottom:4px;display:block}
+.form-item-full input{width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px;outline:none}
+.matrix-editor{overflow-x:auto}
+.matrix-editor table{border-collapse:collapse;font-size:13px;min-width:100%}
+.matrix-editor th{background:var(--bg);padding:4px;text-align:center;font-weight:500;color:var(--text-2);border:1px solid var(--border);font-size:12px;white-space:nowrap}
+.matrix-editor th:first-child{position:sticky;left:0;z-index:3}
+.matrix-editor td{padding:2px;border:1px solid var(--border);text-align:center;white-space:nowrap}
+.matrix-editor td:first-child{position:sticky;left:0;z-index:2}
+.matrix-editor input{width:100%;border:none;text-align:center;padding:6px 2px;font-size:13px;outline:none;background:transparent}
+.matrix-editor input.qty-input{font-weight:500;color:var(--text)}
+.matrix-editor input.size-input{font-size:12px;font-weight:600;color:var(--text-2);width:48px}
+.matrix-editor input.color-input{font-size:13px;font-weight:600;color:var(--text);text-align:center;width:60px}
+.matrix-editor input.color-code{font-size:10px;color:var(--text-3);width:50px}
+.matrix-editor .color-header{background:var(--primary-light);position:sticky;left:0;z-index:2}
+.matrix-editor .total-cell{font-weight:600;background:#fafafa;font-size:12px;position:sticky;left:0;z-index:2}
+.matrix-editor tr:last-child .total-cell{position:static}
+.matrix-editor th.size-col{position:relative;padding-right:18px}
+.matrix-editor .del-size{position:absolute;right:2px;top:50%;transform:translateY(-50%);width:16px;height:16px;border-radius:50%;background:#fff0f0;color:#ff4d4f;border:none;font-size:10px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1}
+.matrix-editor .del-color{width:20px;height:20px;border-radius:50%;background:#fff0f0;color:#ff4d4f;border:none;font-size:10px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;line-height:1;margin-left:2px;vertical-align:middle}
+.matrix-editor .add-size-col{cursor:pointer;color:var(--primary);font-size:18px;font-weight:300;padding:4px 8px}
+.color-add-row{display:flex;gap:8px;margin-top:8px}
+.color-add-row input{flex:1;height:36px;border:1px solid var(--border);border-radius:8px;padding:0 10px;font-size:13px}
+.btn-small{padding:0 16px;height:36px;background:var(--primary);color:#fff;border:none;border-radius:8px;font-size:13px;cursor:pointer;white-space:nowrap}
+.btn-outline{background:transparent;color:var(--primary);border:1px solid var(--primary)}
+.submit-bar{padding:16px;background:var(--card);border-top:1px solid var(--border);display:flex;gap:10px}
+.submit-bar button{flex:1;height:44px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;border:none}
+.btn-cancel{background:var(--bg);color:var(--text-2)}
+.btn-submit{background:var(--primary);color:#fff}
+
+/* Image Upload */
+.img-upload-area{width:100%;min-height:120px;border:2px dashed var(--border);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;position:relative;overflow:hidden;background:var(--bg);transition:border-color .2s}
+.img-upload-area:hover{border-color:var(--primary)}
+.img-upload-area.has-img{border-style:solid;border-color:var(--border)}
+.img-upload-area img{width:100%;height:100%;max-height:200px;object-fit:contain;border-radius:8px}
+.img-upload-icon{font-size:32px;color:var(--text-3)}
+.img-upload-text{font-size:12px;color:var(--text-3);margin-top:6px}
+.img-remove-btn{position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;background:rgba(0,0,0,.55);color:#fff;border:none;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2}
+.style-image-preview{width:100%;max-height:240px;object-fit:contain;border-radius:10px;margin-top:8px}
+
+/* Toast */
+.toast{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,.75);color:#fff;padding:12px 24px;border-radius:10px;font-size:14px;z-index:1000;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+
+/* Modal */
+.modal-mask{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.45);z-index:100;display:none;align-items:flex-end;justify-content:center}
+.modal-mask.show{display:flex}
+.modal-sheet{background:#fff;border-radius:16px 16px 0 0;width:390px;max-height:70%;overflow-y:auto;padding:20px}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:16px;text-align:center}
+.modal-option{padding:14px;border:1px solid var(--border);border-radius:10px;margin-bottom:8px;text-align:center;cursor:pointer;transition:all .15s}
+.modal-option:active{background:var(--bg)}
+.modal-option.active{border-color:var(--primary);background:var(--primary-light);color:var(--primary);font-weight:600}
+.modal-close{width:100%;height:44px;background:var(--bg);color:var(--text-2);border:none;border-radius:10px;font-size:15px;margin-top:8px;cursor:pointer}
+
+/* Bottom Nav */
+.bottom-nav{display:flex;background:var(--card);border-top:1px solid var(--border);height:56px;flex-shrink:0}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;cursor:pointer;color:var(--text-3)}
+.nav-item.active{color:var(--primary)}
+.nav-item .icon{font-size:20px}
+.nav-item .text{font-size:10px}
+
+/* Animations */
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.page.active.slide-anim{animation:slideIn .25s ease}
+
+/* Scrollbar hide */
+.content::-webkit-scrollbar{display:none}
+</style>
+</head>
+<body>
+<div class="phone">
+<!-- ============ LOGIN PAGE ============ -->
+<div id="page-login" class="page active" style="min-height:100vh">
+<div class="login-page">
+<div class="login-logo">📦</div>
+<div class="login-title">外贸服装订单系统</div>
+<div class="login-sub">Garment Order Management</div>
+<div class="login-card" id="login-card-main">
+<h3>账号登录</h3>
+<div class="input-group">
+<label>公司代码</label>
+<input id="login-company" type="text" placeholder="如：DEMO01" value="DEMO01">
+</div>
+<div class="input-group">
+<label>用户名</label>
+<input id="login-user" type="text" placeholder="输入用户名" value="admin">
+</div>
+<div class="input-group">
+<label>密码</label>
+<input id="login-pass" type="password" placeholder="输入密码" value="123456">
+</div>
+<button class="btn-primary" onclick="doLogin()">登 录</button>
+<div class="login-hint">演示公司 DEMO01 | admin/liwen/wangli/chenli/zhanggen/liugen/zhaogen/john | 密码 123456</div>
+<div style="height:1px;background:var(--border);margin:20px 0"></div>
+<button class="wx-login-btn" onclick="showToast('微信登录需小程序环境')">💚 微信一键登录</button>
+<div style="text-align:center;margin-top:16px">
+<span style="font-size:13px;color:var(--primary);cursor:pointer" onclick="showRegister()">没有账号？注册新公司 →</span>
+</div>
+</div>
+<div class="login-card" id="login-card-register" style="display:none">
+<h3>注册新公司</h3>
+<div class="input-group">
+<label>公司名称 *</label>
+<input id="reg-company-name" type="text" placeholder="如：华盛服装贸易">
+</div>
+<div class="input-group">
+<label>公司代码 *</label>
+<input id="reg-company-code" type="text" placeholder="如：WS001（用于登录）">
+</div>
+<div class="input-group">
+<label>管理员姓名 *</label>
+<input id="reg-admin-name" type="text" placeholder="您的姓名">
+</div>
+<div class="input-group">
+<label>管理员账号 *</label>
+<input id="reg-admin-user" type="text" placeholder="登录用户名">
+</div>
+<div class="input-group">
+<label>手机号</label>
+<input id="reg-admin-phone" type="tel" placeholder="手机号码">
+</div>
+<div class="input-group">
+<label>设置密码 *</label>
+<input id="reg-admin-pass" type="password" placeholder="设置登录密码">
+</div>
+<button class="btn-primary" onclick="doRegister()">注 册</button>
+<div style="text-align:center;margin-top:16px">
+<span style="font-size:13px;color:var(--primary);cursor:pointer" onclick="showLogin()">← 返回登录</span>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ============ ORDER LIST PAGE ============ -->
+<div id="page-orders" class="page">
+<div class="statusbar">
+<span id="orders-title">订单列表</span>
+</div>
+<div class="content">
+<div class="order-list-header">
+<div class="search-box">
+<span>🔍</span>
+<input type="text" id="search-input" placeholder="搜索订单号/款号" oninput="filterOrders()">
+</div>
+<div class="add-btn" onclick="goCreate()" title="新建订单">+</div>
+</div>
+<div class="filter-tabs" id="filter-tabs">
+<div class="filter-tab active" data-status="all" onclick="setFilter(this)">全部</div>
+<div class="filter-tab" data-status="draft" onclick="setFilter(this)">草稿</div>
+<div class="filter-tab" data-status="confirmed" onclick="setFilter(this)">已确认</div>
+<div class="filter-tab" data-status="in_progress" onclick="setFilter(this)">生产中</div>
+<div class="filter-tab" data-status="shipped" onclick="setFilter(this)">已发货</div>
+<div class="filter-tab" data-status="completed" onclick="setFilter(this)">已完成</div>
+</div>
+<div id="order-list" class="order-list"></div>
+<div class="list-footer" id="list-footer">— 共 0 条订单 —</div>
+</div>
+<div class="bottom-nav">
+<div class="nav-item active" onclick="goPage('orders')"><div class="icon">📄</div><div class="text">订单</div></div>
+<div class="nav-item" onclick="showToast('统计功能开发中')"><div class="icon">📊</div><div class="text">统计</div></div>
+<div class="nav-item" onclick="goPage('profile');renderProfile()"><div class="icon">👤</div><div class="text">我的</div></div>
+</div>
+</div>
+
+<!-- ============ PROFILE / TEAM PAGE ============ -->
+<div id="page-profile" class="page">
+<div class="statusbar">
+<span>我的</span>
+</div>
+<div class="content" id="profile-content"></div>
+<div class="bottom-nav">
+<div class="nav-item" onclick="goPage('orders')"><div class="icon">📄</div><div class="text">订单</div></div>
+<div class="nav-item" onclick="showToast('统计功能开发中')"><div class="icon">📊</div><div class="text">统计</div></div>
+<div class="nav-item active" onclick="goPage('profile');renderProfile()"><div class="icon">👤</div><div class="text">我的</div></div>
+</div>
+</div>
+
+<!-- ============ ORDER DETAIL PAGE ============ -->
+<div id="page-detail" class="page">
+<div class="statusbar">
+<span class="back" onclick="goPage('orders')">‹</span>
+<span>订单详情</span>
+<div style="position:absolute;right:12px;display:flex;align-items:center;gap:12px">
+<span id="detail-perm-btn" onclick="openPermSettings(currentOrderId)" style="display:none;font-size:14px;color:var(--primary);cursor:pointer;white-space:nowrap">权限设置</span>
+<span id="detail-edit-btn" onclick="goEdit(currentOrderId)" style="display:none;font-size:14px;color:var(--primary);cursor:pointer;white-space:nowrap">编辑</span>
+</div>
+</div>
+<div class="content" id="detail-content"></div>
+</div>
+
+<!-- ============ ORDER CREATE PAGE ============ -->
+<div id="page-create" class="page">
+<div class="statusbar">
+<span class="back" onclick="goPage('orders')">‹</span>
+<span id="create-page-title">新建订单</span>
+</div>
+<div class="content">
+<div class="form-section">
+<div class="form-section-title">📋 订单基础信息</div>
+<div class="form-row">
+<div class="form-item">
+<label>订单号</label>
+<input id="f-orderno" type="text" value="PO-2026-0003" placeholder="自动生成">
+</div>
+<div class="form-item">
+<label>款号 (Style No)</label>
+<input id="f-styleno" type="text" placeholder="如 TS-003">
+</div>
+</div>
+<div class="form-item-full">
+<label>款式名称</label>
+<input id="f-stylename" type="text" placeholder="如 纯棉连帽卫衣">
+</div>
+<div class="form-row">
+<div class="form-item">
+<label>客户</label>
+<div class="combo-box">
+<input id="f-customer" type="text" list="dl-customer" placeholder="选择或输入客户" value="Global Fashion Ltd.">
+<datalist id="dl-customer">
+<option>Global Fashion Ltd.</option>
+<option>Mango Retail Group</option>
+<option>Zara Inditex</option>
+<option>H&M Group</option>
+<option>Uniqlo Co., Ltd.</option>
+</datalist>
+</div>
+</div>
+<div class="form-item">
+<label>工厂</label>
+<div class="combo-box">
+<input id="f-factory" type="text" list="dl-factory" placeholder="选择或输入工厂" value="广州华盛服装制造有限公司">
+<datalist id="dl-factory">
+<option>广州华盛服装制造有限公司</option>
+<option>东莞利丰针织厂</option>
+<option>绍兴恒逸服饰有限公司</option>
+<option>泉州宝德服装有限公司</option>
+<option>宁波申洲针织有限公司</option>
+</datalist>
+</div>
+</div>
+</div>
+<div class="form-row">
+<div class="form-item">
+<label>季节</label>
+<div class="combo-box">
+<input id="f-season" type="text" list="dl-season" placeholder="选择或输入季节" value="2026SS">
+<datalist id="dl-season">
+<option>2026SS</option>
+<option>2026AW</option>
+<option>2027SS</option>
+<option>2027AW</option>
+</datalist>
+</div>
+</div>
+<div class="form-item">
+<label>类别</label>
+<div class="combo-box">
+<input id="f-category" type="text" list="dl-category" placeholder="选择或输入类别" value="T恤">
+<datalist id="dl-category">
+<option>T恤</option>
+<option>卫衣</option>
+<option>裤装</option>
+<option>外套</option>
+<option>连衣裙</option>
+<option>衬衫</option>
+<option>针织衫</option>
+<option>羽绒服</option>
+</datalist>
+</div>
+</div>
+</div>
+<div class="form-item-full">
+<label>交期 (Delivery Date)</label>
+<input id="f-delivery" type="date" value="2026-10-15">
+</div>
+<div class="form-row" id="assign-row" style="display:none">
+<div class="form-item">
+<label>理单 (Coordinator)</label>
+<div class="combo-box">
+<input id="f-coordinator" type="text" list="dl-coordinators" placeholder="" style="width:100%;height:42px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px">
+<datalist id="dl-coordinators"></datalist>
+</div>
+</div>
+<div class="form-item">
+<label>跟单 (Merchandiser)</label>
+<div class="combo-box">
+<input id="f-merchandiser" type="text" list="dl-merchandisers" placeholder="" style="width:100%;height:42px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px">
+<datalist id="dl-merchandisers"></datalist>
+</div>
+</div>
+</div>
+<div class="form-item-full">
+<label>款式图 (Style Image) — 可选</label>
+<div class="img-upload-area" id="img-upload-area" onclick="triggerImgUpload()">
+<div class="img-upload-icon">📷</div>
+<div class="img-upload-text">点击上传款式图（支持 JPG/PNG）</div>
+</div>
+<input type="file" id="f-style-image" accept="image/*" style="display:none" onchange="handleImgUpload(event)">
+</div>
+</div>
+<div class="form-section">
+<div class="form-section-title">🎨 颜色尺码矩阵 <span style="font-size:12px;color:var(--text-3);font-weight:400">点击单元格输入数量</span></div>
+<div class="matrix-editor" id="matrix-editor"></div>
+<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+<button class="btn-small btn-outline" onclick="addColor()">+ 添加颜色行</button>
+<span style="font-size:12px;color:var(--text-3);line-height:36px">💡 颜色名/尺码均可直接编辑，点 ＋ 增列，点 × 删除</span>
+</div>
+<div style="margin-top:12px;padding:10px;background:var(--bg);border-radius:8px;font-size:13px;color:var(--text-2);display:flex;justify-content:space-between">
+<span>总数量自动汇总：</span><span id="matrix-total" style="font-weight:700;color:var(--primary);font-size:15px">0 件</span>
+</div>
+</div>
+</div>
+<div class="submit-bar">
+<button class="btn-cancel" onclick="goPage('orders')">取消</button>
+<button class="btn-submit" id="submit-btn" onclick="submitOrder()">创建订单</button>
+</div>
+</div>
+
+<!-- ============ MATERIAL MANAGE PAGE ============ -->
+<div id="page-trim" class="page">
+<div class="statusbar">
+<span class="back" onclick="goDetail(currentOrderId)">‹</span>
+<span id="material-page-title">物料管理</span>
+<span class="right-btn" id="material-add-btn" onclick="addMaterial()">+ 添加</span>
+</div>
+<div class="content" id="trim-manage-content"></div>
+</div>
+
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<!-- Modal -->
+<div id="modal" class="modal-mask" onclick="closeModal(event)">
+<div class="modal-sheet" id="modal-sheet"></div>
+</div>
+
+<script>
+// ==================== API CONFIG ====================
+const API_BASE = window.API_BASE || ''; // Same origin - no prefix needed when served by NestJS // Set to backend URL when connected
+let authToken = localStorage.getItem('authToken') || '';
+let currentUser = null;
+let currentCompany = null;
+let currentOrderId = null;
+let currentFilter = 'all';
+let currentDetailTab = 'info';
+let orders = []; // Will be loaded from API
+
+const roleNames = {admin:'管理员',coordinator:'理单',merchandiser:'跟单',customer:'客户端'};
+const roleColors = {admin:'#1677ff',coordinator:'#13c2c2',merchandiser:'#52c41a',customer:'#722ed1'};
+
+// ==================== API HELPER ====================
+async function api(method, path, body) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json' },
+  };
+  if (authToken) opts.headers['Authorization'] = 'Bearer ' + authToken;
+  if (body) opts.body = JSON.stringify(body);
+  try {
+    const res = await fetch(API_BASE + '/api' + path, opts);
+    if (res.status === 401) {
+      authToken = '';
+      localStorage.removeItem('authToken');
+      currentUser = null;
+      currentCompany = null;
+      showToast('登录已过期，请重新登录');
+      goPage('login');
+      return null;
+    }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ message: '请求失败' }));
+      throw new Error(err.message || (err.data && err.data.message) || '请求失败');
+    }
+    const json = await res.json();
+    // Unwrap response interceptor: {code:'SUCCESS', data:{...}}
+    if (json && json.code === 'SUCCESS' && json.data !== undefined) {
+      return json.data;
+    }
+    return json;
+  } catch (e) {
+    if (e.message.includes('Failed to fetch') || e.message.includes('NetworkError')) {
+      showToast('网络连接失败，请检查后端服务');
+    } else {
+      showToast(e.message);
+    }
+    throw e;
+  }
+}
+
+// ==================== MOCK DATA (fallback only) ====================
+const _mockCompanies = [
+{
+id:1, code:'DEMO01', name:'演示贸易公司', createdAt:'2026-06-01',
+users:[
+{id:1,username:'admin',password:'123456',realName:'系统管理员',role:'admin',avatar:'#1677ff',phone:'13800000001',lastLogin:'2026-07-12 20:30',status:'active'},
+{id:2,username:'liwen',password:'123456',realName:'李理单',role:'coordinator',avatar:'#13c2c2',phone:'13800000002',lastLogin:'2026-07-12 18:15',status:'active'},
+{id:5,username:'wangli',password:'123456',realName:'王理单',role:'coordinator',avatar:'#08979c',phone:'13800000005',lastLogin:'2026-07-11 16:20',status:'active'},
+{id:6,username:'chenli',password:'123456',realName:'陈理单',role:'coordinator',avatar:'#5cdbd3',phone:'13800000006',lastLogin:'2026-07-10 10:00',status:'active'},
+{id:3,username:'zhanggen',password:'123456',realName:'张跟单',role:'merchandiser',avatar:'#52c41a',phone:'13800000003',lastLogin:'2026-07-11 09:30',status:'active'},
+{id:7,username:'liugen',password:'123456',realName:'刘跟单',role:'merchandiser',avatar:'#389e0d',phone:'13800000007',lastLogin:'2026-07-12 08:45',status:'active'},
+{id:8,username:'zhaogen',password:'123456',realName:'赵跟单',role:'merchandiser',avatar:'#b7eb8f',phone:'13800000008',lastLogin:'2026-07-09 14:30',status:'active'},
+{id:4,username:'john',password:'123456',realName:'John Smith',role:'customer',customerId:1,avatar:'#722ed1',phone:'13800000004',lastLogin:'2026-07-10 14:00',status:'active'},
+],
+orders:null, // will be set below
+},
+];
+
+// ==================== DEMO ORDERS (assigned to company 1) ====================
+const demoOrders = [
+{
+id:1,orderNo:'PO-2026-0001',customerId:1,customerName:'Global Fashion Ltd.',
+styleNo:'TS-001',styleName:'纯棉圆领T恤',season:'2026SS',category:'T恤',
+totalQty:1000,deliveryDate:'2026-09-30',factoryId:1,factoryName:'广州华盛服装制造有限公司',
+coordinatorId:2,coordinatorName:'李理单',merchandiserId:3,merchandiserName:'张跟单',orderStatus:'in_progress',
+image:'👕',
+// Per-order permission settings (admin configurable)
+permissions:{
+basicInfo:['coordinator'],    // who can edit basic info (besides admin)
+materials:['coordinator','merchandiser'], // who can manage materials
+production:['merchandiser'],  // who can update production progress
+},
+// Fabrics (面料)
+fabrics:[
+{id:1,name:'全棉汗布',color:'黑色/白色',spec:'180gsm 58/60"',usage:0.22,demand:220,supplier:'绍兴面料厂',
+status:'received',qtyCheck:'verified',plannedDate:'2026-07-20',actualDate:'2026-07-18',notes:'品质OK'},
+{id:2,name:'罗纹口',color:'黑色/白色',spec:'1x1棉氨纶',usage:0.02,demand:20,supplier:'绍兴面料厂',
+status:'received',qtyCheck:'verified',plannedDate:'2026-07-20',actualDate:'2026-07-18',notes:''},
+],
+colorSizes:[
+{color:'黑色',code:'BLK',rowColor:'#45AAF2',S:100,M:150,L:150,XL:100},
+{color:'白色',code:'WHT',rowColor:'#FF9F43',S:100,M:150,L:150,XL:100},
+],
+trims:[
+{id:1,name:'主唛',cat:'label',color:'黑色/白色',spec:'织标 2x4cm',usage:1,demand:1000,supplier:'义乌辅料批发中心',
+sampling:'approved',bulk:'received',qtyCheck:'sufficient',inspection:'pass',isReady:1,
+plannedDate:'2026-07-15',actualDate:'2026-07-12'},
+{id:2,name:'洗水唛',cat:'care_label',color:'黑色/白色',spec:'丝印 3x5cm',usage:1,demand:1000,supplier:'义乌辅料批发中心',
+sampling:'approved',bulk:'received',qtyCheck:'sufficient',inspection:'pass',isReady:1,
+plannedDate:'2026-07-15',actualDate:'2026-07-12'},
+{id:3,name:'吊牌',cat:'hangtag',color:'通用',spec:'300g铜版纸',usage:1,demand:1000,supplier:'义乌辅料批发中心',
+sampling:'approved',bulk:'ordered',qtyCheck:'pending',inspection:'pending',isReady:0,
+plannedDate:'2026-08-20',actualDate:null},
+{id:4,name:'主拉链',cat:'zipper',color:'黑色',spec:'YKK 5#尼龙',usage:1,demand:1000,supplier:'义乌辅料批发中心',
+sampling:'sent_for_approval',bulk:'not_ordered',qtyCheck:'pending',inspection:'pending',isReady:0,
+plannedDate:'2026-08-15',actualDate:null},
+{id:5,name:'纽扣',cat:'button',color:'黑色',spec:'树脂 18mm',usage:3,demand:3000,supplier:'义乌辅料批发中心',
+sampling:'approved',bulk:'producing',qtyCheck:'pending',inspection:'pending',isReady:0,
+plannedDate:'2026-08-10',actualDate:null},
+{id:6,name:'包装袋',cat:'other',color:'透明',spec:'PE 25x35cm',usage:1,demand:1000,supplier:'义乌辅料批发中心',
+sampling:'approved',bulk:'received',qtyCheck:'sufficient',inspection:'pass',isReady:1,
+plannedDate:'2026-08-01',actualDate:'2026-07-28'},
+],
+taStages:[
+{cat:'sampling',code:'proto',name:'初样 (Proto)',status:'completed',planned:'2026-07-01',actual:'2026-06-28',pct:100},
+{cat:'sampling',code:'pps',name:'产前样 (PPS)',status:'completed',planned:'2026-07-15',actual:'2026-07-14',pct:100},
+{cat:'sampling',code:'confirmed',name:'确认样',status:'completed',planned:'2026-07-25',actual:'2026-07-24',pct:100},
+{cat:'production',code:'cutting',name:'裁剪 (Cutting)',status:'completed',planned:'2026-08-01',actual:'2026-07-30',pct:100},
+{cat:'production',code:'sewing',name:'车缝 (Sewing)',status:'in_progress',planned:'2026-08-15',actual:null,pct:60},
+{cat:'production',code:'packing',name:'后整包装 (Packing)',status:'not_started',planned:'2026-09-01',actual:null,pct:0},
+{cat:'inspection',code:'dupro',name:'中期检验 (Dupro)',status:'not_started',planned:'2026-08-20',actual:null,pct:0},
+{cat:'inspection',code:'fri',name:'尾期检验 (FRI)',status:'not_started',planned:'2026-09-10',actual:null,pct:0},
+{cat:'inspection',code:'report',name:'验货报告',status:'not_started',planned:'2026-09-12',actual:null,pct:0},
+{cat:'shipping',code:'booking',name:'订舱',status:'not_started',planned:'2026-09-15',actual:null,pct:0},
+{cat:'shipping',code:'loading',name:'装柜',status:'not_started',planned:'2026-09-20',actual:null,pct:0},
+{cat:'shipping',code:'etd',name:'离港 (ETD)',status:'not_started',planned:'2026-09-22',actual:null,pct:0},
+{cat:'shipping',code:'eta',name:'到港 (ETA)',status:'not_started',planned:'2026-10-10',actual:null,pct:0},
+],
+logs:[
+{user:'张跟单',role:'merchandiser',time:'2026-07-24 14:30',module:'ta_stage',summary:'将 <b>确认样</b> 状态从 <span class="old-val">进行中</span> 改为 <span class="new-val">已完成</span> <span style="color:var(--text-3);font-size:11px">（完成日期: 2026-07-24）</span>'},
+{user:'张跟单',role:'merchandiser',time:'2026-07-30 09:15',module:'ta_stage',summary:'将 <b>裁剪 (Cutting)</b> 状态从 <span class="old-val">进行中</span> 改为 <span class="new-val">已完成</span> <span style="color:var(--text-3);font-size:11px">（完成日期: 2026-07-30）</span>'},
+{user:'李理单',role:'coordinator',time:'2026-07-18 10:00',module:'material',summary:'面料 <b>全棉汗布</b> 已到厂，数量核对正确 <span style="color:var(--text-3);font-size:11px">（2026-07-18）</span>'},
+{user:'张跟单',role:'merchandiser',time:'2026-08-05 16:20',module:'trim',summary:'辅料 <b>主唛</b> 大货状态更新为 <span class="new-val">已到厂</span>，检验 <span class="new-val">合格</span> <span style="color:var(--text-3);font-size:11px">（2026-08-05）</span>'},
+{user:'系统管理员',role:'admin',time:'2026-08-06 11:00',module:'trim',summary:'辅料 <b>纽扣</b> 大货状态更新为 <span class="new-val">生产中</span> <span style="color:var(--text-3);font-size:11px">（2026-08-06）</span>'},
+{user:'John Smith',role:'customer',time:'2026-08-06 15:30',module:'order',summary:'查看订单进度'},
+]
+},
+{
+id:2,orderNo:'PO-2026-0002',customerId:2,customerName:'Mango Retail Group',
+styleNo:'HD-002',styleName:'连帽卫衣',season:'2026AW',category:'卫衣',
+totalQty:2500,deliveryDate:'2026-10-31',factoryId:2,factoryName:'东莞利丰针织厂',
+coordinatorId:5,coordinatorName:'王理单',merchandiserId:7,merchandiserName:'刘跟单',orderStatus:'confirmed',
+image:'🧥',
+permissions:{
+basicInfo:['coordinator'],
+materials:['coordinator','merchandiser'],
+production:['merchandiser'],
+},
+fabrics:[
+{id:3,name:'抓毛卫衣布',color:'深灰/藏青',spec:'320gsm 58/60"',usage:0.35,demand:875,supplier:'福建针织厂',
+status:'producing',qtyCheck:'pending',plannedDate:'2026-08-30',actualDate:null,notes:'大货生产中，预计8月底到厂'},
+{id:4,name:'撞色罗纹',color:'深灰/藏青/酒红',spec:'2x2棉氨纶',usage:0.03,demand:75,supplier:'福建针织厂',
+status:'not_ordered',qtyCheck:'pending',plannedDate:'2026-09-05',actualDate:null,notes:''},
+],
+colorSizes:[
+{color:'深灰',code:'GRY',rowColor:'#26DE81',S:200,M:300,L:300,XL:200,XXL:100},
+{color:'藏青',code:'NVY',rowColor:'#FECA57',S:200,M:300,L:300,XL:200,XXL:100},
+{color:'酒红',code:'RED',rowColor:'#FF6B6B',S:100,M:150,L:150,XL:100,XXL:50},
+],
+trims:[
+{id:7,name:'主唛',cat:'label',color:'深灰/藏青/酒红',spec:'织标 2x5cm',usage:1,demand:2500,supplier:'义乌辅料批发中心',
+sampling:'in_sampling',bulk:'not_ordered',qtyCheck:'pending',inspection:'pending',isReady:0,
+plannedDate:'2026-08-20',actualDate:null},
+{id:8,name:'抽绳',cat:'other',color:'深灰/藏青',spec:'棉绳 120cm',usage:2,demand:5000,supplier:'义乌辅料批发中心',
+sampling:'pending',bulk:'not_ordered',qtyCheck:'pending',inspection:'pending',isReady:0,
+plannedDate:'2026-08-25',actualDate:null},
+{id:9,name:'金属气眼',cat:'other',color:'古铜',spec:'铜色 8mm',usage:4,demand:10000,supplier:'义乌辅料批发中心',
+sampling:'sent_for_approval',bulk:'not_ordered',qtyCheck:'pending',inspection:'pending',isReady:0,
+plannedDate:'2026-08-25',actualDate:null},
+],
+taStages:[
+{cat:'sampling',code:'proto',name:'初样 (Proto)',status:'completed',planned:'2026-08-01',actual:'2026-07-28',pct:100},
+{cat:'sampling',code:'pps',name:'产前样 (PPS)',status:'in_progress',planned:'2026-08-15',actual:null,pct:80},
+{cat:'sampling',code:'confirmed',name:'确认样',status:'not_started',planned:'2026-08-25',actual:null,pct:0},
+{cat:'production',code:'cutting',name:'裁剪 (Cutting)',status:'not_started',planned:'2026-09-01',actual:null,pct:0},
+{cat:'production',code:'sewing',name:'车缝 (Sewing)',status:'not_started',planned:'2026-09-15',actual:null,pct:0},
+{cat:'production',code:'packing',name:'后整包装 (Packing)',status:'not_started',planned:'2026-10-01',actual:null,pct:0},
+{cat:'inspection',code:'dupro',name:'中期检验 (Dupro)',status:'not_started',planned:'2026-09-20',actual:null,pct:0},
+{cat:'inspection',code:'fri',name:'尾期检验 (FRI)',status:'not_started',planned:'2026-10-20',actual:null,pct:0},
+{cat:'inspection',code:'report',name:'验货报告',status:'not_started',planned:'2026-10-22',actual:null,pct:0},
+{cat:'shipping',code:'booking',name:'订舱',status:'not_started',planned:'2026-10-25',actual:null,pct:0},
+{cat:'shipping',code:'loading',name:'装柜',status:'not_started',planned:'2026-10-28',actual:null,pct:0},
+{cat:'shipping',code:'etd',name:'离港 (ETD)',status:'not_started',planned:'2026-10-30',actual:null,pct:0},
+{cat:'shipping',code:'eta',name:'到港 (ETA)',status:'not_started',planned:'2026-11-20',actual:null,pct:0},
+],
+logs:[
+{user:'张跟单',role:'merchandiser',time:'2026-07-28 10:00',module:'ta_stage',summary:'将 <b>初样 (Proto)</b> 状态从 <span class="old-val">进行中</span> 改为 <span class="new-val">已完成</span> <span style="color:var(--text-3);font-size:11px">（完成日期: 2026-07-28）</span>'},
+{user:'张跟单',role:'merchandiser',time:'2026-08-10 14:00',module:'ta_stage',summary:'将 <b>产前样 (PPS)</b> 状态从 <span class="old-val">未开始</span> 改为 <span class="new-val">进行中</span>，进度 80% <span style="color:var(--text-3);font-size:11px">（开始日期: 2026-08-10）</span>'},
+]
+},
+{
+id:3,orderNo:'PO-2026-0003',customerId:1,customerName:'Global Fashion Ltd.',
+styleNo:'PT-003',styleName:'工装长裤',season:'2026AW',category:'裤装',
+totalQty:800,deliveryDate:'2026-11-15',factoryId:1,factoryName:'广州华盛服装制造有限公司',
+coordinatorId:6,coordinatorName:'陈理单',merchandiserId:8,merchandiserName:'赵跟单',orderStatus:'draft',
+image:'👖',
+permissions:{
+basicInfo:['coordinator'],
+materials:['coordinator','merchandiser'],
+production:['merchandiser'],
+},
+fabrics:[],
+colorSizes:[
+{color:'卡其',code:'KHK',S:80,M:120,L:120,XL:80},
+],
+trims:[],
+taStages:[
+{cat:'sampling',code:'proto',name:'初样 (Proto)',status:'not_started',planned:'2026-09-01',actual:null,pct:0},
+{cat:'sampling',code:'pps',name:'产前样 (PPS)',status:'not_started',planned:null,actual:null,pct:0},
+{cat:'sampling',code:'confirmed',name:'确认样',status:'not_started',planned:null,actual:null,pct:0},
+{cat:'production',code:'cutting',name:'裁剪 (Cutting)',status:'not_started',planned:null,actual:null,pct:0},
+{cat:'production',code:'sewing',name:'车缝 (Sewing)',status:'not_started',planned:null,actual:null,pct:0},
+{cat:'production',code:'packing',name:'后整包装 (Packing)',status:'not_started',planned:null,actual:null,pct:0},
+{cat:'inspection',code:'dupro',name:'中期检验 (Dupro)',status:'not_started',planned:null,actual:null,pct:0},
+{cat:'inspection',code:'fri',name:'尾期检验 (FRI)',status:'not_started',planned:null,actual:null,pct:0},
+{cat:'inspection',code:'report',name:'验货报告',status:'not_started',planned:null,actual:null,pct:0},
+{cat:'shipping',code:'booking',name:'订舱',status:'not_started',planned:null,actual:null,pct:0},
+{cat:'shipping',code:'loading',name:'装柜',status:'not_started',planned:null,actual:null,pct:0},
+{cat:'shipping',code:'etd',name:'离港 (ETD)',status:'not_started',planned:null,actual:null,pct:0},
+{cat:'shipping',code:'eta',name:'到港 (ETA)',status:'not_started',planned:null,actual:null,pct:0},
+],
+logs:[
+{user:'系统管理员',role:'admin',time:'2026-08-01 09:00',module:'order',summary:'创建订单 <b>PO-2026-0003</b>'},
+]
+},
+{
+id:4,orderNo:'PO-2026-0004',customerId:2,customerName:'Mango Retail Group',
+styleNo:'JK-004',styleName:'牛仔夹克',season:'2026AW',category:'外套',
+totalQty:1200,deliveryDate:'2026-11-30',factoryId:2,factoryName:'东莞利丰针织厂',
+coordinatorId:2,coordinatorName:'李理单',merchandiserId:3,merchandiserName:'张跟单',orderStatus:'confirmed',
+image:'🧥',
+permissions:{
+basicInfo:['coordinator'],
+materials:['coordinator','merchandiser'],
+production:['merchandiser'],
+},
+fabrics:[
+{id:7,name:'牛仔布',color:'深蓝',spec:'12oz 58/60"',usage:0.45,demand:540,supplier:'绍兴牛仔面料厂',
+status:'ordered',qtyCheck:'pending',plannedDate:'2026-09-20',actualDate:null,notes:''},
+{id:8,name:'里布',color:'深蓝',spec:'涤纶 70D',usage:0.3,demand:360,supplier:'绍兴里布厂',
+status:'not_ordered',qtyCheck:'pending',plannedDate:'2026-09-25',actualDate:null,notes:''},
+],
+colorSizes:[
+{color:'深蓝',code:'NAV',rowColor:'#4FC3F7',S:150,M:250,L:300,XL:250,XXL:250},
+],
+trims:[
+{id:10,name:'纽扣',cat:'button',color:'银色',spec:'金属 15mm',usage:5,demand:6000,supplier:'义乌辅料批发中心',
+sampling:'approved',bulk:'ordered',qtyCheck:'pending',inspection:'pending',isReady:0,
+plannedDate:'2026-09-15',actualDate:null},
+],
+taStages:[
+{cat:'sampling',code:'proto',name:'初样 (Proto)',status:'completed',planned:'2026-08-10',actual:'2026-08-08',pct:100},
+{cat:'sampling',code:'pps',name:'产前样 (PPS)',status:'in_progress',planned:'2026-08-25',actual:null,pct:60},
+{cat:'sampling',code:'confirmed',name:'确认样',status:'not_started',planned:null,actual:null,pct:0},
+{cat:'production',code:'cutting',name:'裁剪 (Cutting)',status:'not_started',planned:null,actual:null,pct:0},
+{cat:'production',code:'sewing',name:'车缝 (Sewing)',status:'not_started',planned:null,actual:null,pct:0},
+{cat:'production',code:'packing',name:'后整包装 (Packing)',status:'not_started',planned:null,actual:null,pct:0},
+{cat:'inspection',code:'dupro',name:'中期检验 (Dupro)',status:'not_started',planned:null,actual:null,pct:0},
+{cat:'inspection',code:'fri',name:'尾期检验 (FRI)',status:'not_started',planned:null,actual:null,pct:0},
+{cat:'inspection',code:'report',name:'验货报告',status:'not_started',planned:null,actual:null,pct:0},
+{cat:'shipping',code:'booking',name:'订舱',status:'not_started',planned:null,actual:null,pct:0},
+{cat:'shipping',code:'loading',name:'装柜',status:'not_started',planned:null,actual:null,pct:0},
+{cat:'shipping',code:'etd',name:'离港 (ETD)',status:'not_started',planned:null,actual:null,pct:0},
+{cat:'shipping',code:'eta',name:'到港 (ETA)',status:'not_started',planned:null,actual:null,pct:0},
+],
+logs:[
+{user:'系统管理员',role:'admin',time:'2026-08-02 10:00',module:'order',summary:'创建订单 <b>PO-2026-0004</b>，分配理单 <b>李理单</b>，跟单 <b>张跟单</b>'},
+]
+},
+];
+
+// Link demo orders to company 1 (fallback data)
+_mockCompanies[0].orders = demoOrders;
+// Global orders — loaded from API
+let orders = [];
+
+const statusMap = {
+draft:{label:'草稿',cls:'st-draft'},
+confirmed:{label:'已确认',cls:'st-confirmed'},
+in_progress:{label:'生产中',cls:'st-in_progress'},
+shipped:{label:'已发货',cls:'st-shipped'},
+completed:{label:'已完成',cls:'st-completed'},
+cancelled:{label:'已取消',cls:'st-cancelled'},
+};
+
+const taStatusMap = {
+not_started:{label:'未开始',icon:'○',cls:'ta-icon-not_started'},
+in_progress:{label:'进行中',icon:'◐',cls:'ta-icon-in_progress'},
+completed:{label:'已完成',icon:'●',cls:'ta-icon-completed'},
+delayed:{label:'延误',icon:'!',cls:'ta-icon-delayed'},
+};
+
+const samplingMap = {
+pending:'待打样',in_sampling:'打样中',sent_for_approval:'寄客批',approved:'已确认',rejected:'已退回'
+};
+const bulkMap = {
+not_ordered:'未下单',ordered:'已下单',producing:'生产中',shipped:'已发货',received:'已到厂'
+};
+const qtyMap = {pending:'待清点',short:'短缺',sufficient:'足额'};
+const inspMap = {pending:'待检验',pass:'合格',fail:'不合格'};
+
+const taGroups = {
+sampling:{name:'打样阶段',color:'#1677ff'},
+production:{name:'大货生产',color:'#fa8c16'},
+inspection:{name:'验货阶段',color:'#722ed1'},
+shipping:{name:'出货阶段',color:'#0958d9'},
+};
+
+const trimCatMap = {
+lining:'里布',sleeve_lining:'袖里',knee:'裤膝',pocket:'口袋布',button:'纽扣',zipper:'拉链',label:'商标',care_label:'水洗唛',hangtag:'吊牌',size_label:'尺码唛',hanger:'衣架',other:'其他'
+};
+
+// ==================== LOGIN ====================
+function showLogin() {
+document.getElementById('login-card-main').style.display = '';
+document.getElementById('login-card-register').style.display = 'none';
+}
+
+function showRegister() {
+document.getElementById('login-card-main').style.display = 'none';
+document.getElementById('login-card-register').style.display = '';
+}
+
+async function doLogin() {
+const companyCode = document.getElementById('login-company').value.trim().toUpperCase();
+const username = document.getElementById('login-user').value.trim();
+const password = document.getElementById('login-pass').value;
+if (!companyCode || !username || !password) { showToast('请填写完整信息'); return; }
+
+try {
+  const res = await api('POST', '/auth/login', { companyCode, username, password });
+  authToken = res.token;
+  localStorage.setItem('authToken', authToken);
+  currentUser = res.user;
+  currentCompany = { id: res.user.companyId, code: res.user.companyCode, name: res.user.companyName };
+
+  // Load company info (users list etc.)
+  await loadCompanyInfo();
+
+  showToast('登录成功，欢迎 ' + currentUser.realName);
+  setTimeout(()=>{
+    goPage('orders');
+    loadOrders();
+  }, 300);
+} catch(e) {
+  // Error already shown by api()
+}
+}
+
+async function loadCompanyInfo() {
+  try {
+    const info = await api('GET', '/company/info');
+    // Store users in currentCompany for compatibility with existing UI code
+    currentCompany.users = info.users.map(u => ({
+      id: u.id,
+      username: u.username,
+      realName: u.realName,
+      role: u.role,
+      avatar: u.avatarColor || '#1677ff',
+      phone: u.phone || '未填写',
+      lastLogin: u.lastLoginAt || '',
+      status: u.status,
+      customerId: u.customerId || null,
+    }));
+    currentCompany.unregistered = info.unregistered || [];
+    currentCompany.orderCount = info.orderCount || 0;
+    currentCompany.userCount = info.userCount || info.users.length;
+  } catch(e) {
+    // Fallback to mock users
+    currentCompany.users = _mockCompanies[0].users;
+    currentCompany.unregistered = [];
+    currentCompany.orderCount = orders.length;
+    currentCompany.userCount = currentCompany.users.length;
+  }
+}
+
+function doRegister() {
+const companyName = document.getElementById('reg-company-name').value.trim();
+const companyCode = document.getElementById('reg-company-code').value.trim().toUpperCase();
+const adminName = document.getElementById('reg-admin-name').value.trim();
+const adminUser = document.getElementById('reg-admin-user').value.trim();
+const adminPhone = document.getElementById('reg-admin-phone').value.trim();
+const adminPass = document.getElementById('reg-admin-pass').value;
+
+async function doRegister() {
+const companyName = document.getElementById('reg-company-name').value.trim();
+const companyCode = document.getElementById('reg-company-code').value.trim().toUpperCase();
+const adminName = document.getElementById('reg-admin-name').value.trim();
+const adminUser = document.getElementById('reg-admin-user').value.trim();
+const adminPhone = document.getElementById('reg-admin-phone').value.trim();
+const adminPass = document.getElementById('reg-admin-pass').value;
+
+if (!companyName || !companyCode || !adminName || !adminUser || !adminPass) {
+showToast('请填写带 * 的必填项'); return;
+}
+
+try {
+  const res = await api('POST', '/auth/register', {
+    companyCode, companyName,
+    adminUsername: adminUser,
+    adminRealName: adminName,
+    adminPassword: adminPass,
+    phone: adminPhone,
+  });
+  authToken = res.token;
+  localStorage.setItem('authToken', authToken);
+  currentUser = res.user;
+  currentCompany = { id: res.user.companyId, code: res.user.companyCode, name: res.user.companyName };
+
+  showToast('注册成功！欢迎 ' + currentUser.realName);
+  setTimeout(()=>{
+    goPage('orders');
+    loadOrders();
+  }, 300);
+} catch(e) {
+  // Error already shown by api()
+}
+}
+
+// ==================== ORDER LIST ====================
+// ==================== LOAD ORDERS FROM API ====================
+async function loadOrders() {
+try {
+  const res = await api('GET', '/orders');
+  orders = res.list || res;
+  // Transform API data to match UI expectations
+  orders = orders.map(o => ({
+    ...o,
+    image: '👕', // fallback icon
+    styleImage: o.garmentImageUrl || '',
+    permissions: { basicInfo:['coordinator'], materials:['coordinator','merchandiser'], production:['merchandiser'] },
+    fabrics: o.fabrics || [],
+    trims: o.trims || [],
+    colorSizes: o.colorSizes || [],
+    taStages: o.taStages || [],
+    logs: o.logs || [],
+  }));
+  renderOrderList();
+} catch(e) {
+  // Fallback to mock data
+  orders = _mockCompanies[0].orders;
+  renderOrderList();
+}
+}
+
+function getFilteredOrders() {
+let list = [...orders];
+// Role-based filtering: match by ID first, then fallback to name match
+if (currentUser.role === 'customer') {
+list = list.filter(o => o.customerId === currentUser.customerId);
+} else if (currentUser.role === 'coordinator') {
+list = list.filter(o => o.coordinatorId === currentUser.id || o.coordinatorName === currentUser.realName);
+} else if (currentUser.role === 'merchandiser') {
+list = list.filter(o => o.merchandiserId === currentUser.id || o.merchandiserName === currentUser.realName);
+}
+// admin sees all orders
+// Status filter
+if (currentFilter !== 'all') {
+list = list.filter(o => o.orderStatus === currentFilter);
+}
+// Search
+const q = document.getElementById('search-input').value.trim().toLowerCase();
+if (q) {
+list = list.filter(o => o.orderNo.toLowerCase().includes(q) || o.styleNo.toLowerCase().includes(q) || o.styleName.toLowerCase().includes(q));
+}
+return list;
+}
+
+function renderOrderList() {
+const list = getFilteredOrders();
+const container = document.getElementById('order-list');
+const titleEl = document.getElementById('orders-title');
+titleEl.textContent = currentUser.role === 'customer' ? '我的订单' : currentUser.role === 'coordinator' ? `我负责的订单` : currentUser.role === 'merchandiser' ? `我跟单的订单` : '全部订单';
+
+// Show "+" button only for admin and coordinator
+const addBtn = document.querySelector('.add-btn');
+if (addBtn) addBtn.style.display = (currentUser.role === 'admin' || currentUser.role === 'coordinator') ? '' : 'none';
+
+if (list.length === 0) {
+container.innerHTML = '<div style="text-align:center;padding:60px 20px;color:var(--text-3)"><div style="font-size:48px;margin-bottom:12px">📭</div><div>暂无订单</div></div>';
+document.getElementById('list-footer').textContent = '— 共 0 条订单 —';
+return;
+}
+
+container.innerHTML = list.map(o => {
+const st = statusMap[o.orderStatus];
+const today = new Date('2026-08-10');
+const daysLeft = Math.ceil((new Date(o.deliveryDate) - today) / 86400000);
+const deliveryClass = daysLeft <= 30 && daysLeft > 0 ? 'delivery-warning' : '';
+const deliveryText = daysLeft > 0 ? `剩 ${daysLeft} 天` : `逾期 ${-daysLeft} 天`;
+const showAssign = currentUser.role === 'admin';
+// Helper: show "待注册" tag for unregistered names
+const coordTag = o.coordinatorId && currentCompany.users.find(u => u.id === o.coordinatorId) ? '' : (o.coordinatorName && o.coordinatorName !== '未分配' ? '<span style="font-size:10px;padding:1px 4px;border-radius:3px;background:#fff7e6;color:#fa8c16;margin-left:4px">待注册</span>' : '');
+const merTag = o.merchandiserId && currentCompany.users.find(u => u.id === o.merchandiserId) ? '' : (o.merchandiserName && o.merchandiserName !== '未分配' ? '<span style="font-size:10px;padding:1px 4px;border-radius:3px;background:#fff7e6;color:#fa8c16;margin-left:4px">待注册</span>' : '');
+return `<div class="order-card" onclick="goDetail(${o.id})">
+<div class="order-card-top">
+<span class="order-no">${o.orderNo}</span>
+<span class="order-status ${st.cls}">${st.label}</span>
+</div>
+<div class="order-info">
+<div class="order-img">${o.styleImage ? `<img src="${o.styleImage}" style="width:100%;height:100%;object-fit:cover;border-radius:8px">` : o.image}</div>
+<div class="order-meta">
+<div class="row"><span class="label">款号</span><span>${o.styleNo}</span> · <span>${o.styleName}</span></div>
+<div class="row"><span class="label">客户</span><span>${o.customerName}</span></div>
+<div class="row"><span class="label">数量</span><span class="qty-badge">${o.totalQty.toLocaleString()} 件</span></div>
+${showAssign ? `<div class="row"><span class="label">理单</span><span style="color:#13c2c2;font-weight:500">${o.coordinatorName||'未分配'}${coordTag}</span> · <span class="label" style="margin-left:4px">跟单</span><span style="color:#52c41a;font-weight:500">${o.merchandiserName||'未分配'}${merTag}</span></div>` : ''}
+<div class="row"><span class="label">交期</span><span class="${deliveryClass}">${o.deliveryDate}（${deliveryText}）</span></div>
+</div>
+</div>
+</div>`;
+}).join('');
+
+document.getElementById('list-footer').textContent = `— 共 ${list.length} 条订单 —`;
+}
+
+function setFilter(el) {
+document.querySelectorAll('#filter-tabs .filter-tab').forEach(e=>e.classList.remove('active'));
+el.classList.add('active');
+currentFilter = el.dataset.status;
+renderOrderList();
+}
+
+function filterOrders() { renderOrderList(); }
+
+// ==================== ORDER DETAIL ====================
+async function goDetail(id) {
+currentOrderId = id;
+goPage('detail');
+// Load order detail from API
+try {
+  const detail = await api('GET', '/orders/' + id);
+  // Merge with cached orders list data
+  const cached = orders.find(o => o.id === id);
+  const order = {
+    ...cached,
+    ...detail,
+    image: detail.image || '👕',
+    styleImage: detail.garmentImageUrl || (cached ? cached.styleImage : ''),
+    permissions: { basicInfo:['coordinator'], materials:['coordinator','merchandiser'], production:['merchandiser'] },
+  };
+  // Update in local cache
+  if (cached) Object.assign(cached, order);
+  renderDetailWithData(order);
+} catch(e) {
+  // Fallback to local data
+  const order = orders.find(o => o.id === id);
+  if (order) renderDetailWithData(order);
+}
+}
+
+function renderDetailWithData(order) {
+const st = statusMap[order.orderStatus];
+const today = new Date('2026-08-10');
+const daysLeft = Math.ceil((new Date(order.deliveryDate) - today) / 86400000);
+
+// Permission helpers
+const perms = order.permissions || {basicInfo:[],materials:[],production:[]};
+const isAssignedCoord = currentUser.role === 'coordinator' && (order.coordinatorId === currentUser.id || order.coordinatorName === currentUser.realName);
+const isAssignedMer = currentUser.role === 'merchandiser' && (order.merchandiserId === currentUser.id || order.merchandiserName === currentUser.realName);
+// Coordinator can edit basic info only for orders assigned to them
+const canEditBasic = currentUser.role === 'admin' || isAssignedCoord || perms.basicInfo.includes(currentUser.role);
+// Admin, assigned coordinator/merchandiser can manage materials
+const canManageMaterials = currentUser.role === 'admin' || isAssignedCoord || isAssignedMer || perms.materials.includes(currentUser.role);
+// Only admin and assigned coordinator can edit material details
+const canManageMaterialDetails = currentUser.role === 'admin' || isAssignedCoord;
+// T&A: admin/assigned merchandiser can update all stages; assigned coordinator can update sampling+shipping
+const canUpdateProd = currentUser.role === 'admin' || isAssignedCoord || isAssignedMer || perms.production.includes(currentUser.role);
+const isCustomer = currentUser.role === 'customer';
+
+// Show/hide edit button in statusbar
+const editBtn = document.getElementById('detail-edit-btn');
+if (editBtn) editBtn.style.display = canEditBasic ? '' : 'none';
+// Show/hide permission settings button (admin only)
+const permBtn = document.getElementById('detail-perm-btn');
+if (permBtn) permBtn.style.display = currentUser.role === 'admin' ? '' : 'none';
+
+let tabs = `
+<div class="detail-tab ${currentDetailTab==='info'?'active':''}" onclick="setDetailTab('info')">基础信息</div>
+<div class="detail-tab ${currentDetailTab==='materials'?'active':''}" onclick="setDetailTab('materials')">物料进度</div>
+<div class="detail-tab ${currentDetailTab==='ta'?'active':''}" onclick="setDetailTab('ta')">T&A进度</div>
+<div class="detail-tab ${currentDetailTab==='logs'?'active':''}" onclick="setDetailTab('logs')">操作日志</div>
+`;
+
+let tabContent = '';
+if (currentDetailTab === 'info') tabContent = renderInfoTab(order, canEditBasic, isCustomer);
+else if (currentDetailTab === 'materials') tabContent = renderMaterialsTab(order, canManageMaterials, canManageMaterialDetails, isCustomer);
+else if (currentDetailTab === 'ta') tabContent = renderTATab(order);
+else if (currentDetailTab === 'logs') tabContent = renderLogsTab(order);
+
+// Customer: hide factory info in header
+const factoryLine = isCustomer ? '' : `<div style="font-size:12px;color:var(--text-2);margin-top:2px">工厂: ${order.factoryName}</div>`;
+
+document.getElementById('detail-content').innerHTML = `
+<div class="detail-header">
+<div class="detail-order-no">${order.orderNo} <span class="order-status ${st.cls}" style="margin-left:8px">${st.label}</span></div>
+<div class="detail-style">${order.styleNo} · ${order.styleName} · ${order.season} · ${order.category}</div>
+${factoryLine}
+<div class="detail-stats">
+<div class="stat-item"><div class="val">${order.totalQty.toLocaleString()}</div><div class="label">总数量</div></div>
+<div class="stat-item"><div class="val" style="color:${daysLeft<=30?'var(--red)':'var(--text)'}">${daysLeft>0?daysLeft:'逾期'+(-daysLeft)}</div><div class="label">距交期(天)</div></div>
+<div class="stat-item"><div class="val">${order.colorSizes.length}</div><div class="label">颜色数</div></div>
+</div>
+</div>
+<div class="detail-tabs">${tabs}</div>
+<div class="tab-content">${tabContent}</div>
+`;
+}
+
+function setDetailTab(tab) {
+currentDetailTab = tab;
+renderDetail();
+}
+
+function renderInfoTab(order, canEditBasic, isCustomer) {
+// Dynamically get sizes from order data
+const usedSizes = [];
+order.colorSizes.forEach(c => {
+Object.keys(c).forEach(k => {
+if (k !== 'color' && k !== 'code' && k !== 'rowColor' && c[k] !== undefined && !usedSizes.includes(k)) usedSizes.push(k);
+});
+});
+let matrixRows = order.colorSizes.map((c, ci) => {
+const cells = usedSizes.map(s => `<td>${(c[s]||0).toLocaleString()}</td>`).join('');
+const rowTotal = usedSizes.reduce((sum,s) => sum + (c[s]||0), 0);
+const bgStyle = c.rowColor ? `background:${c.rowColor}33;` : '';
+const dot = c.rowColor ? `<span class="row-color-dot" style="background:${c.rowColor}" onclick="event.stopPropagation();toggleRowColorPicker(${order.id},${ci})" title="点击修改行颜色"></span>` : `<span class="row-color-dot" style="background:#e0e0e0;border:1px dashed #bbb" onclick="event.stopPropagation();toggleRowColorPicker(${order.id},${ci})" title="点击设置行颜色"></span>`;
+return `<tr style="${bgStyle}"><td class="color-cell">${dot}${c.color}<br><span style="font-size:10px;color:var(--text-3)">${c.code}</span><div id="row-color-pick-${ci}" style="display:none"></div></td>${cells}<td class="total-cell">${rowTotal.toLocaleString()}</td></tr>`;
+}).join('');
+const colTotal = usedSizes.map(s => {
+const total = order.colorSizes.reduce((sum,c) => sum + (c[s]||0), 0);
+return `<td class="total-cell">${total.toLocaleString()}</td>`;
+}).join('');
+
+const editBtn = canEditBasic
+? `<button class="btn-small" onclick="goEdit(${order.id})">编辑</button>`
+: '<span style="font-size:12px;color:var(--text-3)">无编辑权限</span>';
+
+const imageHtml = order.styleImage
+? `<div class="section-card"><div class="section-title">🖼️ 款式图</div><img src="${order.styleImage}" class="style-image-preview" alt="款式图"></div>`
+: '';
+
+// Customer cannot see factory info
+const factoryRow = isCustomer ? '' : `<div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">工厂</span><span>${order.factoryName}</span></div>`;
+const coordinatorRow = isCustomer ? '' : (() => {
+const name = order.coordinatorName||'未分配';
+const isRegistered = order.coordinatorId && currentCompany.users.find(u => u.id === order.coordinatorId);
+const tag = isRegistered ? '' : (name !== '未分配' ? '<span style="font-size:10px;padding:1px 4px;border-radius:3px;background:#fff7e6;color:#fa8c16;margin-left:4px">待注册</span>' : '');
+return `<div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">理单</span><span style="color:#13c2c2;font-weight:500">${name}${tag}</span></div>`;
+})();
+const merchandiserRow = isCustomer ? '' : (() => {
+const name = order.merchandiserName||'未分配';
+const isRegistered = order.merchandiserId && currentCompany.users.find(u => u.id === order.merchandiserId);
+const tag = isRegistered ? '' : (name !== '未分配' ? '<span style="font-size:10px;padding:1px 4px;border-radius:3px;background:#fff7e6;color:#fa8c16;margin-left:4px">待注册</span>' : '');
+return `<div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">跟单</span><span style="color:#52c41a;font-weight:500">${name}${tag}</span></div>`;
+})();
+
+const sizeCount = usedSizes.length;
+const scrollHint = sizeCount > 5 ? `<span style="font-size:11px;color:var(--text-3);font-weight:400">↔ 左右滑动查看全部 ${sizeCount} 个尺码</span>` : '';
+
+return `
+${imageHtml}
+<div class="section-card">
+<div class="section-title"><span>📊 颜色尺码矩阵</span><span style="display:flex;align-items:center;gap:8px">${scrollHint}${editBtn}</span></div>
+<div class="matrix-scroll">
+<table class="matrix-table">
+<tr><th>颜色 / 尺码</th>${usedSizes.map(s=>`<th>${s}</th>`).join('')}<th>合计</th></tr>
+${matrixRows}
+<tr><td class="total-cell">合计</td>${colTotal}<td class="total-cell">${order.totalQty.toLocaleString()}</td></tr>
+</table>
+</div>
+</div>
+<div class="section-card">
+<div class="section-title">📋 订单信息</div>
+<div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+<div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">客户</span><span>${order.customerName}</span></div>
+${factoryRow}
+${coordinatorRow}
+${merchandiserRow}
+<div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">交期</span><span style="color:var(--red);font-weight:600">${order.deliveryDate}</span></div>
+<div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">季节/类别</span><span>${order.season} / ${order.category}</span></div>
+</div>
+</div>
+`;
+}
+
+// Fabric status maps
+const fabricStatusMap = {not_ordered:'未下单',ordered:'已下单',producing:'生产中',shipped:'已发货',received:'已到厂'};
+const fabricCheckMap = {pending:'待清点',verified:'已核对',short:'短缺'};
+
+function renderMaterialsTab(order, canManage, canManageDetails, isCustomer) {
+let html = '';
+
+// --- Fabrics section ---
+const fabReadyCount = (order.fabrics||[]).filter(f=>f.status==='received'&&f.qtyCheck==='verified').length;
+const fabTotal = (order.fabrics||[]).length;
+html += `<div class="section-card">
+<div class="section-title"><span>🧵 面料进度 (${fabReadyCount}/${fabTotal} 就绪)</span>${canManage?`<button class="btn-small" onclick="goMaterialManage(${order.id},'fabric')">管理 →</button>`:''}</div>`;
+
+if ((order.fabrics||[]).length === 0) {
+html += '<div style="text-align:center;padding:20px;color:var(--text-3)">暂无面料数据</div>';
+} else {
+html += (order.fabrics||[]).map(f => {
+const stCls = f.status==='received'?'ts-approved':f.status==='producing'?'ts-in_sampling':f.status==='shipped'?'ts-sent_for_approval':'ts-pending';
+const chkCls = f.qtyCheck==='verified'?'ts-approved':f.qtyCheck==='short'?'ts-rejected':'ts-pending';
+return `<div class="trim-item">
+<div class="trim-item-top">
+<div><span class="trim-name">${f.name}</span><span class="trim-cat" style="margin-left:6px">面料</span></div>
+<span class="trim-ready-tag ${f.status==='received'&&f.qtyCheck==='verified'?'tag-ready':'tag-not-ready'}">${f.status==='received'&&f.qtyCheck==='verified'?'✓ 就绪':'未就绪'}</span>
+</div>
+<div style="font-size:12px;color:var(--text-2);margin-bottom:8px">颜色: ${f.color||'-'} | 规格: ${f.spec} | 用量: ${f.usage}m/件 | 总需求: ${f.demand}m | 供应商: ${isCustomer?'***':f.supplier}</div>
+<div class="trim-status-row">
+<div class="trim-step">
+<div class="step-label">状态</div>
+<div class="step-val ${stCls}">${fabricStatusMap[f.status]}</div>
+</div>
+<div class="trim-step">
+<div class="step-label">核对</div>
+<div class="step-val ${chkCls}">${fabricCheckMap[f.qtyCheck]}</div>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px">
+<div style="display:flex;align-items:center;gap:6px;font-size:11px"><span style="color:var(--text-3);min-width:56px">计划到厂:</span><span style="color:var(--text);font-weight:500">${f.plannedDate||'-'}</span></div>
+<div style="display:flex;align-items:center;gap:6px;font-size:11px"><span style="color:var(--text-3);min-width:56px">实际到厂:</span><span style="color:${f.actualDate?'var(--success)':'var(--text-3)'};font-weight:500">${f.actualDate||'-'}</span></div>
+</div>
+${f.notes?`<div style="font-size:11px;color:var(--text-3);margin-top:6px">📝 ${f.notes}</div>`:''}
+</div>`;
+}).join('');
+}
+html += '</div>';
+
+// --- Trims section ---
+const readyCount = order.trims.filter(t=>t.isReady).length;
+const totalCount = order.trims.length;
+const allReady = readyCount === totalCount && totalCount > 0;
+
+html += `<div class="trim-ready-banner ${allReady?'all-ready':'not-ready'}" style="margin-top:12px">
+<div class="icon">${allReady?'✅':'⚠️'}</div>
+<div class="info">
+<div class="title">辅料齐套状态：${allReady?'已齐套':'未齐套'}</div>
+<div class="desc">${readyCount}/${totalCount} 项辅料就绪</div>
+</div>
+<div class="check-btn" onclick="checkTrimsReady()">一键检查</div>
+</div>`;
+
+html += `<div class="section-card">
+<div class="section-title"><span>🏷️ 辅料明细</span>${canManage?`<button class="btn-small" onclick="goMaterialManage(${order.id},'trim')">管理 →</button>`:''}</div>`;
+
+if (order.trims.length === 0) {
+html += '<div style="text-align:center;padding:20px;color:var(--text-3)">暂无辅料数据</div>';
+} else {
+html += order.trims.map(t => {
+const fd = t.fieldDates || {};
+return `<div class="trim-item">
+<div class="trim-item-top">
+<div>
+<span class="trim-name">${t.name}</span>
+<span class="trim-cat">${trimCatMap[t.cat]||t.cat}</span>
+<span class="trim-ready-tag ${t.isReady?'tag-ready':'tag-not-ready'}" style="margin-left:6px">${t.isReady?'✓ 齐套':'未齐套'}</span>
+</div>
+</div>
+<div style="font-size:12px;color:var(--text-2);margin-bottom:8px">颜色: ${t.color||'-'} | 规格: ${t.spec} | 用量: ${t.usage}/件 | 总需求: ${t.demand.toLocaleString()} | 供应商: ${isCustomer?'***':t.supplier}</div>
+<div class="trim-status-row">
+<div class="trim-step">
+<div class="step-label">打样</div>
+<div class="step-val ts-${t.sampling}">${samplingMap[t.sampling]}</div>
+${fd.sampling?`<div class="step-date">${fd.sampling}</div>`:''}
+</div>
+<div class="trim-step">
+<div class="step-label">大货</div>
+<div class="step-val ts-${t.bulk}">${bulkMap[t.bulk]}</div>
+${fd.bulk?`<div class="step-date">${fd.bulk}</div>`:''}
+</div>
+<div class="trim-step">
+<div class="step-label">清点</div>
+<div class="step-val ts-${t.qtyCheck}">${qtyMap[t.qtyCheck]}</div>
+${fd.qtyCheck?`<div class="step-date">${fd.qtyCheck}</div>`:''}
+</div>
+<div class="trim-step">
+<div class="step-label">检验</div>
+<div class="step-val ts-${t.inspection}">${inspMap[t.inspection]}</div>
+${fd.inspection?`<div class="step-date">${fd.inspection}</div>`:''}
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px">
+<div style="display:flex;align-items:center;gap:6px;font-size:11px"><span style="color:var(--text-3);min-width:56px">计划到厂:</span><span style="color:var(--text);font-weight:500">${t.plannedDate||'-'}</span></div>
+<div style="display:flex;align-items:center;gap:6px;font-size:11px"><span style="color:var(--text-3);min-width:56px">实际到厂:</span><span style="color:${t.actualDate?'var(--success)':'var(--text-3)'};font-weight:500">${t.actualDate||'-'}</span></div>
+</div>
+</div>`;
+}).join('');
+}
+html += '</div>';
+
+return html;
+}
+
+// Per-stage T&A permission: coordinator can only update sampling + shipping stages
+function canUpdateTAStage(order, stage) {
+if (currentUser.role === 'admin') return true;
+if (currentUser.role === 'coordinator' && (order.coordinatorId === currentUser.id || order.coordinatorName === currentUser.realName)) {
+return stage.cat === 'sampling' || stage.cat === 'shipping';
+}
+if (currentUser.role === 'merchandiser' && (order.merchandiserId === currentUser.id || order.merchandiserName === currentUser.realName)) {
+const perms = order.permissions || {production:[]};
+return perms.production.includes('merchandiser');
+}
+return false;
+}
+
+function renderTATab(order) {
+let html = '';
+const groupKeys = ['sampling','production','inspection','shipping'];
+const hasAnyPermission = order.taStages.some(s => canUpdateTAStage(order, s));
+for (const gk of groupKeys) {
+const group = taGroups[gk];
+const stages = order.taStages.filter(s=>s.cat===gk);
+if (stages.length === 0) continue;
+html += `<div class="ta-group">
+<div class="ta-group-title"><span class="dot" style="background:${group.color}"></span>${group.name}</div>`;
+html += stages.map(s => {
+const st = taStatusMap[s.status];
+const stageCanUpdate = canUpdateTAStage(order, s);
+return `<div class="ta-stage" onclick="${stageCanUpdate?`updateTAStage(${order.id},'${s.code}')`:''}">
+<div class="ta-stage-icon ${st.cls}">${st.icon}</div>
+<div class="ta-stage-info">
+<div class="ta-stage-name">${s.name} <span style="font-size:11px;font-weight:400;color:var(--text-3);margin-left:4px">${st.label}</span></div>
+${s.startDate?`<div class="ta-stage-date">🚀 开始: ${s.startDate}</div>`:''}
+${s.planned?`<div class="ta-stage-date" style="color:var(--primary)">📅 预计完成: ${s.planned}</div>`:''}
+${s.actual?`<div class="ta-stage-date" style="color:var(--success)">✅ 实际完成: ${s.actual}</div>`:''}
+${s.status==='in_progress'?`<div class="ta-progress-bar"><div class="ta-progress-fill" style="width:${s.pct}%;background:${group.color}"></div></div>`:''}
+</div>
+${stageCanUpdate?'<div class="ta-stage-arrow">›</div>':'<div class="ta-stage-arrow" style="color:var(--text-3);font-size:12px">锁</div>'}
+</div>`;
+}).join('');
+html += '</div>';
+}
+if (!hasAnyPermission) {
+html += '<div style="text-align:center;padding:12px;font-size:12px;color:var(--text-3)">您的角色无权更新进度</div>';
+}
+return html;
+}
+
+function renderLogsTab(order) {
+if (order.logs.length === 0) {
+return '<div style="text-align:center;padding:40px 20px;color:var(--text-3)"><div style="font-size:36px;margin-bottom:8px">📝</div>暂无操作记录</div>';
+}
+return `<div class="log-list">${order.logs.map(l => {
+const color = roleColors[l.role];
+const initial = l.user.charAt(0);
+return `<div class="log-item">
+<div class="log-avatar" style="background:${color}">${initial}</div>
+<div class="log-body">
+<div class="log-top">
+<span class="log-user">${l.user}</span>
+<span class="log-role log-role-${l.role}">${roleNames[l.role]}</span>
+<span class="log-time">${l.time}</span>
+</div>
+<div class="log-content">${l.summary}</div>
+</div>
+</div>`;
+}).join('')}</div>`;
+}
+
+// ==================== TA Stage Update ====================
+function updateTAStage(orderId, stageCode) {
+const order = orders.find(o=>o.id===orderId);
+const stage = order.taStages.find(s=>s.code===stageCode);
+if (!stage) return;
+// Permission check per stage
+if (!canUpdateTAStage(order, stage)) {
+showToast('⚠️ 您无权更新此阶段的进度');
+return;
+}
+
+// Store temp state for the modal
+window._taModal = {orderId, stageCode, tempStatus: stage.status, tempPct: stage.pct, tempStart: stage.startDate||'', tempPlanned: stage.planned||'', tempActual: stage.actual||''};
+
+const statuses = ['not_started','in_progress','completed','delayed'];
+const options = statuses.map(s => {
+const st = taStatusMap[s];
+const isActive = s === stage.status;
+return `<div class="modal-option ${isActive?'active':''}" data-status="${s}" onclick="selectTAStatus(this,'${s}')">${st.label}</div>`;
+}).join('');
+
+document.getElementById('modal-sheet').innerHTML = `
+<div class="modal-title">更新：${stage.name}</div>
+<div style="font-size:12px;color:var(--text-2);text-align:center;margin-bottom:12px">当前状态：${taStatusMap[stage.status].label} · 进度 ${stage.pct}%</div>
+<div style="font-size:12px;color:var(--text-2);margin-bottom:6px">选择状态</div>
+${options}
+<div style="margin-top:16px;display:flex;flex-direction:column;gap:12px">
+<div>
+<label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">🚀 开始时间</label>
+<input type="date" id="ta-start-date" value="${stage.startDate||''}" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px" onchange="window._taModal.tempStart=this.value">
+</div>
+<div>
+<label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">📅 预计完成时间</label>
+<input type="date" id="ta-planned-date" value="${stage.planned||''}" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px" onchange="window._taModal.tempPlanned=this.value">
+</div>
+<div>
+<label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">✅ 实际完成时间</label>
+<input type="date" id="ta-actual-date" value="${stage.actual||''}" style="width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:8px;font-size:14px" onchange="window._taModal.tempActual=this.value">
+</div>
+</div>
+<div id="ta-pct-section" style="margin-top:16px;${stage.status==='in_progress'?'':'display:none'}">
+<label style="font-size:12px;color:var(--text-2);margin-bottom:6px;display:block">完成进度</label>
+<input type="range" min="0" max="100" value="${stage.pct}" style="width:100%" oninput="document.getElementById('pct-val').textContent=this.value+'%';window._taModal.tempPct=parseInt(this.value)">
+<div style="text-align:center;font-size:14px;font-weight:600;color:var(--primary)" id="pct-val">${stage.pct}%</div>
+</div>
+<button class="btn-primary" style="width:100%;margin-top:16px;padding:10px;border:none;border-radius:8px;font-size:14px;color:#fff;background:var(--primary)" onclick="confirmTAStageUpdate()">确认更新</button>
+<button class="modal-close" onclick="closeModal()">取消</button>
+`;
+showModal();
+}
+
+function selectTAStatus(el, status) {
+document.querySelectorAll('.modal-option').forEach(e=>e.classList.remove('active'));
+el.classList.add('active');
+window._taModal.tempStatus = status;
+// Show/hide progress slider based on status
+const pctSection = document.getElementById('ta-pct-section');
+if (pctSection) pctSection.style.display = (status === 'in_progress') ? '' : 'none';
+// Auto-suggest dates when status changes
+const today = '2026-08-10';
+if (status === 'in_progress') {
+// Auto-fill start date if empty
+const startInput = document.getElementById('ta-start-date');
+if (startInput && !startInput.value) {
+startInput.value = today;
+window._taModal.tempStart = today;
+}
+}
+if (status === 'completed') {
+// Auto-fill actual date if empty
+const actualInput = document.getElementById('ta-actual-date');
+if (actualInput && !actualInput.value) {
+actualInput.value = today;
+window._taModal.tempActual = today;
+}
+}
+if (status === 'not_started') {
+// Clear dates
+const startInput = document.getElementById('ta-start-date');
+const actualInput = document.getElementById('ta-actual-date');
+if (startInput) { startInput.value = ''; window._taModal.tempStart = ''; }
+if (actualInput) { actualInput.value = ''; window._taModal.tempActual = ''; }
+}
+}
+
+function confirmTAStageUpdate() {
+if (!window._taModal) return;
+const {orderId, stageCode, tempStatus, tempPct, tempStart, tempPlanned, tempActual} = window._taModal;
+doUpdateTAStage(orderId, stageCode, tempStatus, tempPct, tempStart, tempPlanned, tempActual);
+}
+
+function doUpdateTAStage(orderId, stageCode, newStatus, newPct, newStart, newPlanned, newActual) {
+const order = orders.find(o=>o.id===orderId);
+const stage = order.taStages.find(s=>s.code===stageCode);
+const oldStatus = stage.status;
+const oldPct = stage.pct;
+const oldStart = stage.startDate || '';
+const oldPlanned = stage.planned || '';
+const oldActual = stage.actual || '';
+
+// Get current date string
+const now = new Date();
+const dateStr = `2026-08-${String(10).padStart(2,'0')}`;
+const timeStr = `${dateStr} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+// Track changes for log
+let changes = [];
+
+// Update status
+if (newStatus && newStatus !== oldStatus) {
+stage.status = newStatus;
+changes.push(`状态从 <span class="old-val">${taStatusMap[oldStatus].label}</span> 改为 <span class="new-val">${taStatusMap[newStatus].label}</span>`);
+if (newStatus === 'completed') {
+stage.pct = 100;
+}
+if (newStatus === 'not_started') {
+stage.pct = 0;
+}
+} else if (newStatus === 'in_progress' && newPct !== undefined && newPct !== oldPct) {
+stage.pct = newPct;
+changes.push(`进度从 ${oldPct}% 调整为 ${newPct}%`);
+}
+
+// Update start date
+if (newStart !== undefined) {
+if (newStart !== oldStart) {
+stage.startDate = newStart || null;
+if (newStart) changes.push(`开始时间设为 <span class="new-val">${newStart}</span>`);
+else changes.push(`开始时间已清除`);
+}
+}
+
+// Update planned date
+if (newPlanned !== undefined) {
+if (newPlanned !== oldPlanned) {
+stage.planned = newPlanned || null;
+if (newPlanned) changes.push(`预计完成时间设为 <span class="new-val">${newPlanned}</span>`);
+else changes.push(`预计完成时间已清除`);
+}
+}
+
+// Update actual date
+if (newActual !== undefined) {
+if (newActual !== oldActual) {
+stage.actual = newActual || null;
+if (newActual) changes.push(`实际完成时间设为 <span class="new-val">${newActual}</span>`);
+else changes.push(`实际完成时间已清除`);
+}
+}
+
+// If nothing changed
+if (changes.length === 0) {
+closeModal();
+showToast('未做任何修改');
+return;
+}
+
+// Auto-update order status
+if (stageCode === 'cutting' && newStatus === 'in_progress' && order.orderStatus === 'confirmed') {
+order.orderStatus = 'in_progress';
+}
+if (stageCode === 'etd' && newStatus === 'completed') {
+order.orderStatus = 'shipped';
+}
+
+// Build date info string for log
+let dateInfo = '';
+if (stage.startDate) dateInfo += `${dateInfo?' · ':''}开始: ${stage.startDate}`;
+if (stage.planned) dateInfo += `${dateInfo?' · ':''}预计: ${stage.planned}`;
+if (stage.actual) dateInfo += `${dateInfo?' · ':''}完成: ${stage.actual}`;
+if (dateInfo) dateInfo = `（${dateInfo}）`;
+
+// Add log
+order.logs.unshift({
+user: currentUser.realName,
+role: currentUser.role,
+time: timeStr,
+module: 'ta_stage',
+summary: `<b>${stage.name}</b>：${changes.join('，')} <span style="color:var(--text-3);font-size:11px">${dateInfo}</span>`,
+});
+
+window._taModal = undefined;
+closeModal();
+showToast(`${stage.name} 已更新`);
+renderDetail();
+}
+
+// ==================== Trims Ready Check ====================
+function checkTrimsReady() {
+const order = orders.find(o=>o.id===currentOrderId);
+const notReady = order.trims.filter(t=>!t.isReady);
+if (notReady.length === 0) {
+showToast('✅ 所有辅料已齐套！');
+} else {
+const items = notReady.map(t=>{
+const steps = [];
+if (t.sampling !== 'approved') steps.push('打样未确认');
+if (t.bulk !== 'received') steps.push('大货未到厂');
+if (t.qtyCheck !== 'sufficient') steps.push('数量未清点');
+if (t.inspection !== 'pass') steps.push('检验未通过');
+return `${t.name}: ${steps.join('、')}`;
+}).join('\n');
+showToast(`⚠️ ${notReady.length} 项辅料未齐套`);
+setTimeout(()=>{ alert(items); }, 300);
+}
+}
+
+// ==================== Material Manage (Fabric + Trim) ====================
+let materialType = 'trim'; // 'fabric' or 'trim'
+
+function goMaterialManage(orderId, type) {
+currentOrderId = orderId;
+materialType = type;
+goPage('trim');
+renderMaterialManage();
+}
+
+function renderMaterialManage() {
+const order = orders.find(o=>o.id===currentOrderId);
+const now = new Date();
+const dateStr = `2026-08-10`;
+const timeStr = `${dateStr} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+// Only admin and assigned coordinator can edit material details (spec, usage, demand, supplier, add new)
+const canEditDetails = currentUser.role === 'admin' || (currentUser.role === 'coordinator' && (order.coordinatorId === currentUser.id || order.coordinatorName === currentUser.realName));
+const addBtn = document.getElementById('material-add-btn');
+if (addBtn) addBtn.style.display = canEditDetails ? '' : 'none';
+
+if (materialType === 'fabric') {
+document.getElementById('material-page-title').textContent = '面料管理';
+document.getElementById('material-add-btn').onclick = ()=>addMaterialForm('fabric');
+const fabrics = order.fabrics || [];
+const html = fabrics.map(f => {
+const detailHtml = canEditDetails
+? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+<div><label style="font-size:10px;color:var(--text-3)">名称</label><input type="text" value="${f.name}" style="width:100%;height:32px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px" onchange="updateMaterialDetail('fabric',${f.id},'name',this.value)"></div>
+<div><label style="font-size:10px;color:var(--text-3)">颜色</label><input type="text" value="${f.color||''}" placeholder="如：黑色/白色" style="width:100%;height:32px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px" onchange="updateMaterialDetail('fabric',${f.id},'color',this.value)"></div>
+<div><label style="font-size:10px;color:var(--text-3)">供应商</label><input type="text" value="${f.supplier}" style="width:100%;height:32px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px" onchange="updateMaterialDetail('fabric',${f.id},'supplier',this.value)"></div>
+<div><label style="font-size:10px;color:var(--text-3)">规格</label><input type="text" value="${f.spec}" style="width:100%;height:32px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px" onchange="updateMaterialDetail('fabric',${f.id},'spec',this.value)"></div>
+<div><label style="font-size:10px;color:var(--text-3)">用量(m/件)</label><input type="number" step="0.01" value="${f.usage}" style="width:100%;height:32px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px" onchange="updateMaterialDetail('fabric',${f.id},'usage',this.value)"></div>
+<div><label style="font-size:10px;color:var(--text-3)">总需求(m)</label><input type="number" value="${f.demand}" style="width:100%;height:32px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px" onchange="updateMaterialDetail('fabric',${f.id},'demand',this.value)"></div>
+</div>`
+: `<div style="font-size:12px;color:var(--text-2);margin-bottom:10px">颜色: ${f.color||'-'} | 规格: ${f.spec} | 用量: ${f.usage}m/件 | 总需求: ${f.demand}m | 供应商: ${f.supplier}</div>`;
+return `<div class="trim-item">
+<div class="trim-item-top">
+<div><span class="trim-name">${f.name}</span><span class="trim-cat" style="margin-left:6px">面料</span></div>
+<span class="trim-ready-tag ${f.status==='received'&&f.qtyCheck==='verified'?'tag-ready':'tag-not-ready'}">${f.status==='received'&&f.qtyCheck==='verified'?'✓ 就绪':'未就绪'}</span>
+</div>
+${detailHtml}
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+<button class="btn-small btn-outline" onclick="updateFabricField(${f.id},'status')">状态: ${fabricStatusMap[f.status]}</button>
+<button class="btn-small btn-outline" onclick="updateFabricField(${f.id},'qtyCheck')">核对: ${fabricCheckMap[f.qtyCheck]}</button>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">
+<div style="display:flex;align-items:center;gap:6px">
+<label style="font-size:11px;color:var(--text-2);min-width:56px">计划到厂:</label>
+<input type="date" value="${f.plannedDate||''}" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;flex:1" onchange="updateFabricDate(${f.id},'plannedDate',this.value)">
+</div>
+<div style="display:flex;align-items:center;gap:6px">
+<label style="font-size:11px;color:var(--text-2);min-width:56px">实际到厂:</label>
+<input type="date" value="${f.actualDate||''}" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;flex:1" onchange="updateFabricDate(${f.id},'actualDate',this.value)">
+</div>
+</div>
+${f.notes?`<div style="font-size:11px;color:var(--text-3);margin-top:6px">📝 ${f.notes}</div>`:''}
+</div>`;
+}).join('');
+document.getElementById('trim-manage-content').innerHTML = `<div class="tab-content">
+<div class="section-card"><div class="section-title">面料列表 (${fabrics.length})</div>${html||'<div style="text-align:center;padding:30px;color:var(--text-3)">暂无面料，点击右上角添加</div>'}</div>
+</div>`;
+} else {
+document.getElementById('material-page-title').textContent = '辅料管理';
+document.getElementById('material-add-btn').onclick = ()=>addMaterialForm('trim');
+const html = order.trims.map(t => {
+const detailHtml = canEditDetails
+? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">
+<div><label style="font-size:10px;color:var(--text-3)">名称</label><input type="text" value="${t.name}" style="width:100%;height:32px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px" onchange="updateMaterialDetail('trim',${t.id},'name',this.value)"></div>
+<div><label style="font-size:10px;color:var(--text-3)">类别</label><select style="width:100%;height:32px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px" onchange="updateMaterialDetail('trim',${t.id},'cat',this.value)">${Object.entries(trimCatMap).map(([k,v])=>`<option value="${k}" ${t.cat===k?'selected':''}>${v}</option>`).join('')}</select></div>
+<div><label style="font-size:10px;color:var(--text-3)">颜色</label><input type="text" value="${t.color||''}" placeholder="如：黑色/白色" style="width:100%;height:32px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px" onchange="updateMaterialDetail('trim',${t.id},'color',this.value)"></div>
+<div><label style="font-size:10px;color:var(--text-3)">供应商</label><input type="text" value="${t.supplier}" style="width:100%;height:32px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px" onchange="updateMaterialDetail('trim',${t.id},'supplier',this.value)"></div>
+<div><label style="font-size:10px;color:var(--text-3)">规格</label><input type="text" value="${t.spec}" style="width:100%;height:32px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px" onchange="updateMaterialDetail('trim',${t.id},'spec',this.value)"></div>
+<div><label style="font-size:10px;color:var(--text-3)">用量(/件)</label><input type="number" step="0.01" value="${t.usage}" style="width:100%;height:32px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px" onchange="updateMaterialDetail('trim',${t.id},'usage',this.value)"></div>
+<div><label style="font-size:10px;color:var(--text-3)">总需求</label><input type="number" value="${t.demand}" style="width:100%;height:32px;border:1px solid var(--border);border-radius:6px;padding:0 8px;font-size:13px" onchange="updateMaterialDetail('trim',${t.id},'demand',this.value)"></div>
+</div>`
+: `<div style="font-size:12px;color:var(--text-2);margin-bottom:10px">颜色: ${t.color||'-'} | 规格: ${t.spec} | 用量: ${t.usage}/件 | 总需求: ${t.demand.toLocaleString()} | 供应商: ${t.supplier}</div>`;
+return `<div class="trim-item">
+<div class="trim-item-top">
+<div><span class="trim-name">${t.name}</span><span class="trim-cat" style="margin-left:6px">${trimCatMap[t.cat]||t.cat}</span></div>
+<span class="trim-ready-tag ${t.isReady?'tag-ready':'tag-not-ready'}">${t.isReady?'✓ 齐套':'未齐套'}</span>
+</div>
+${detailHtml}
+<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+<button class="btn-small btn-outline" onclick="updateTrimField(${t.id},'sampling')">打样: ${samplingMap[t.sampling]}${t.fieldDates?.sampling?` (${t.fieldDates.sampling})`:''}</button>
+<button class="btn-small btn-outline" onclick="updateTrimField(${t.id},'bulk')">大货: ${bulkMap[t.bulk]}${t.fieldDates?.bulk?` (${t.fieldDates.bulk})`:''}</button>
+<button class="btn-small btn-outline" onclick="updateTrimField(${t.id},'qtyCheck')">清点: ${qtyMap[t.qtyCheck]}${t.fieldDates?.qtyCheck?` (${t.fieldDates.qtyCheck})`:''}</button>
+<button class="btn-small btn-outline" onclick="updateTrimField(${t.id},'inspection')">检验: ${inspMap[t.inspection]}${t.fieldDates?.inspection?` (${t.fieldDates.inspection})`:''}</button>
+</div>
+<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:8px">
+<div style="display:flex;align-items:center;gap:6px">
+<label style="font-size:11px;color:var(--text-2);min-width:56px">计划到厂:</label>
+<input type="date" value="${t.plannedDate||''}" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;flex:1" onchange="updateTrimDate(${t.id},'plannedDate',this.value)">
+</div>
+<div style="display:flex;align-items:center;gap:6px">
+<label style="font-size:11px;color:var(--text-2);min-width:56px">实际到厂:</label>
+<input type="date" value="${t.actualDate||''}" style="font-size:12px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;flex:1" onchange="updateTrimDate(${t.id},'actualDate',this.value)">
+</div>
+</div>
+</div>`;
+}).join('');
+document.getElementById('trim-manage-content').innerHTML = `<div class="tab-content">
+<div class="section-card"><div class="section-title">辅料列表 (${order.trims.length})</div>${html||'<div style="text-align:center;padding:30px;color:var(--text-3)">暂无辅料，点击右上角添加</div>'}</div>
+</div>`;
+}
+}
+
+// --- Fabric update ---
+function updateFabricField(fabricId, field) {
+const order = orders.find(o=>o.id===currentOrderId);
+const fabric = (order.fabrics||[]).find(f=>f.id===fabricId);
+if (!fabric) return;
+
+const fieldMaps = {status:fabricStatusMap, qtyCheck:fabricCheckMap};
+const fieldLabels = {status:'面料状态', qtyCheck:'数量核对'};
+const options = Object.entries(fieldMaps[field]);
+const currentVal = fabric[field];
+
+const optsHtml = options.map(([k,v])=>{
+const isActive = k === currentVal;
+return `<div class="modal-option ${isActive?'active':''}" onclick="doUpdateFabric(${fabricId},'${field}','${k}','${v}')">${v}</div>`;
+}).join('');
+
+document.getElementById('modal-sheet').innerHTML = `
+<div class="modal-title">${fabric.name} - ${fieldLabels[field]}</div>
+<div style="font-size:12px;color:var(--text-2);text-align:center;margin-bottom:12px">当前：${options.find(o=>o[0]===currentVal)?.[1]||'未设置'}</div>
+${optsHtml}
+<button class="modal-close" onclick="closeModal()">取消</button>
+`;
+showModal();
+}
+
+function doUpdateFabric(fabricId, field, newVal, valLabel) {
+const order = orders.find(o=>o.id===currentOrderId);
+const fabric = (order.fabrics||[]).find(f=>f.id===fabricId);
+const oldVal = fabric[field];
+const fieldLabels = {status:'面料状态', qtyCheck:'数量核对'};
+const valLabels = {status:fabricStatusMap, qtyCheck:fabricCheckMap};
+
+const now = new Date();
+const dateStr = `2026-08-10`;
+const timeStr = `${dateStr} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+fabric[field] = newVal;
+
+order.logs.unshift({
+user: currentUser.realName,
+role: currentUser.role,
+time: timeStr,
+module: 'material',
+summary: `面料 <b>${fabric.name}</b> ${fieldLabels[field]}从 <span class="old-val">${valLabels[field][oldVal]||'未设置'}</span> 改为 <span class="new-val">${valLabel}</span> <span style="color:var(--text-3);font-size:11px">（${dateStr}）</span>`,
+});
+
+closeModal();
+showToast(`${fabric.name} ${fieldLabels[field]}已更新`);
+renderMaterialManage();
+}
+
+function updateFabricDate(fabricId, field, value) {
+const order = orders.find(o=>o.id===currentOrderId);
+const fabric = (order.fabrics||[]).find(f=>f.id===fabricId);
+if (!fabric) return;
+fabric[field] = value || null;
+const now = new Date();
+const dateStr = `2026-08-10`;
+const timeStr = `${dateStr} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+const fieldLabel = field==='plannedDate'?'计划到厂日期':'实际到厂日期';
+order.logs.unshift({
+user:currentUser.realName,role:currentUser.role,time:timeStr,module:'material',
+summary:`面料 <b>${fabric.name}</b> ${fieldLabel}设置为 <span class="new-val">${value||'清除'}</span> <span style="color:var(--text-3);font-size:11px">（${dateStr}）</span>`,
+});
+showToast(`${fabric.name} ${fieldLabel}已更新`);
+}
+
+// --- Add material with detail form (admin & coordinator only) ---
+function addMaterialForm(type) {
+const order = orders.find(o=>o.id===currentOrderId);
+const isFabric = type === 'fabric';
+const catOptions = Object.entries(trimCatMap).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+const statusOptions = Object.entries(fabricStatusMap).map(([k,v])=>`<option value="${k}">${v}</option>`).join('');
+
+document.getElementById('modal-sheet').innerHTML = `
+<div class="modal-title">添加${isFabric?'面料':'辅料'}</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
+<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">名称 *</label><input id="m-name" type="text" placeholder="如：主唛" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px"></div>
+${isFabric?'':`<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">类别</label><select id="m-cat" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px">${catOptions}</select></div>`}
+<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">颜色</label><input id="m-color" type="text" placeholder="如：黑色/白色" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px"></div>
+<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">规格</label><input id="m-spec" type="text" placeholder="如：织标 2x4cm" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px"></div>
+<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">用量${isFabric?'(m/件)':'(/件)'}</label><input id="m-usage" type="number" step="0.01" value="1" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px"></div>
+<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">总需求${isFabric?'(m)':''}</label><input id="m-demand" type="number" value="${order.totalQty}" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px"></div>
+<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">供应商</label><input id="m-supplier" type="text" placeholder="供应商名称" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px"></div>
+${isFabric?`<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">面料状态</label><select id="m-status" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px">${statusOptions}</select></div>`:''}
+<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">计划到厂日期</label><input id="m-planned" type="date" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px"></div>
+</div>
+<button class="btn-primary" style="margin-bottom:8px" onclick="doAddMaterial('${type}')">确认添加</button>
+<button class="modal-close" onclick="closeModal()">取消</button>
+`;
+showModal();
+}
+
+function doAddMaterial(type) {
+const order = orders.find(o=>o.id===currentOrderId);
+const name = document.getElementById('m-name').value.trim();
+if (!name) { showToast('请填写名称'); return; }
+const color = document.getElementById('m-color').value.trim() || '';
+const spec = document.getElementById('m-spec').value.trim() || '待填写';
+const usage = parseFloat(document.getElementById('m-usage').value) || 0;
+const demand = parseInt(document.getElementById('m-demand').value) || 0;
+const supplier = document.getElementById('m-supplier').value.trim() || '待填写';
+const plannedDate = document.getElementById('m-planned').value || null;
+const now = new Date();
+const dateStr = `2026-08-10`;
+const timeStr = `${dateStr} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+if (type === 'fabric') {
+if (!order.fabrics) order.fabrics = [];
+const newId = (order.fabrics.length>0?Math.max(...order.fabrics.map(f=>f.id)):0) + 1;
+const status = document.getElementById('m-status').value;
+order.fabrics.push({id:newId,name,color,spec,usage,demand,supplier,status,qtyCheck:'pending',plannedDate,actualDate:null,notes:''});
+order.logs.unshift({user:currentUser.realName,role:currentUser.role,time:timeStr,module:'material',summary:`添加面料 <b>${name}</b>，颜色: ${color||'-'}，规格: ${spec}，用量: ${usage}m/件，总需求: ${demand}m <span style="color:var(--text-3);font-size:11px">（${dateStr}）</span>`});
+} else {
+const cat = document.getElementById('m-cat').value;
+const newId = Math.max(...order.trims.map(t=>t.id), 0) + 1;
+order.trims.push({id:newId,name,cat,color,spec,usage,demand,supplier,sampling:'pending',bulk:'not_ordered',qtyCheck:'pending',inspection:'pending',isReady:0,plannedDate,actualDate:null,fieldDates:{}});
+order.logs.unshift({user:currentUser.realName,role:currentUser.role,time:timeStr,module:'trim',summary:`添加辅料 <b>${name}</b>，颜色: ${color||'-'}，规格: ${spec}，用量: ${usage}/件，总需求: ${demand} <span style="color:var(--text-3);font-size:11px">（${dateStr}）</span>`});
+}
+closeModal();
+showToast(`已添加${type==='fabric'?'面料':'辅料'}：${name}`);
+renderMaterialManage();
+}
+
+// --- Inline material detail update (admin & coordinator) ---
+function updateMaterialDetail(type, id, field, value) {
+const order = orders.find(o=>o.id===currentOrderId);
+const arr = type === 'fabric' ? (order.fabrics||[]) : order.trims;
+const item = arr.find(t=>t.id===id);
+if (!item) return;
+const oldVal = item[field];
+item[field] = field === 'usage' ? parseFloat(value) || 0 : field === 'demand' ? parseInt(value) || 0 : value;
+if (String(oldVal) !== String(item[field])) {
+const now = new Date();
+const dateStr = `2026-08-10`;
+const timeStr = `${dateStr} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+const fieldLabels = {name:'名称',color:'颜色',spec:'规格',usage:'用量',demand:'总需求',supplier:'供应商',cat:'类别'};
+order.logs.unshift({
+user:currentUser.realName,role:currentUser.role,time:timeStr,module:type==='fabric'?'material':'trim',
+summary:`${type==='fabric'?'面料':'辅料'} <b>${item.name}</b> ${fieldLabels[field]||field}从 <span class="old-val">${oldVal||'空'}</span> 改为 <span class="new-val">${item[field]||'空'}</span> <span style="color:var(--text-3);font-size:11px">（${dateStr}）</span>`,
+});
+}
+}
+
+// --- Trim date update ---
+function updateTrimDate(trimId, field, value) {
+const order = orders.find(o=>o.id===currentOrderId);
+const trim = order.trims.find(t=>t.id===trimId);
+if (!trim) return;
+trim[field] = value || null;
+const now = new Date();
+const dateStr = `2026-08-10`;
+const timeStr = `${dateStr} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+const fieldLabel = field==='plannedDate'?'计划到厂日期':'实际到厂日期';
+order.logs.unshift({
+user:currentUser.realName,role:currentUser.role,time:timeStr,module:'trim',
+summary:`辅料 <b>${trim.name}</b> ${fieldLabel}设置为 <span class="new-val">${value||'清除'}</span> <span style="color:var(--text-3);font-size:11px">（${dateStr}）</span>`,
+});
+showToast(`${trim.name} ${fieldLabel}已更新`);
+}
+
+function updateTrimField(trimId, field) {
+const order = orders.find(o=>o.id===currentOrderId);
+const trim = order.trims.find(t=>t.id===trimId);
+if (!trim) return;
+
+let options = [];
+if (field === 'sampling') options = Object.entries(samplingMap);
+else if (field === 'bulk') options = Object.entries(bulkMap);
+else if (field === 'qtyCheck') options = Object.entries(qtyMap);
+else if (field === 'inspection') options = Object.entries(inspMap);
+
+const fieldLabels = {sampling:'打样状态',bulk:'大货状态',qtyCheck:'数量清点',inspection:'检验结果'};
+const currentVal = trim[field];
+
+const optsHtml = options.map(([k,v])=>{
+const isActive = k === currentVal;
+return `<div class="modal-option ${isActive?'active':''}" onclick="doUpdateTrim(${trimId},'${field}','${k}','${v}')">${v}</div>`;
+}).join('');
+
+document.getElementById('modal-sheet').innerHTML = `
+<div class="modal-title">${trim.name} - ${fieldLabels[field]}</div>
+<div style="font-size:12px;color:var(--text-2);text-align:center;margin-bottom:12px">当前：${options.find(o=>o[0]===currentVal)?.[1]||'未设置'}</div>
+${optsHtml}
+<button class="modal-close" onclick="closeModal()">取消</button>
+`;
+showModal();
+}
+
+function doUpdateTrim(trimId, field, newVal, valLabel) {
+const order = orders.find(o=>o.id===currentOrderId);
+const trim = order.trims.find(t=>t.id===trimId);
+const oldVal = trim[field];
+
+const fieldLabels = {sampling:'打样状态',bulk:'大货状态',qtyCheck:'数量清点',inspection:'检验结果'};
+const valLabels = {sampling:samplingMap,bulk:bulkMap,qtyCheck:qtyMap,inspection:inspMap};
+
+// Get current date string
+const now = new Date();
+const dateStr = `2026-08-10`;
+const timeStr = `${dateStr} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+trim[field] = newVal;
+// Record update date for this field
+if (!trim.fieldDates) trim.fieldDates = {};
+trim.fieldDates[field] = dateStr;
+
+// Auto-check ready
+if (trim.sampling === 'approved' && trim.bulk === 'received' && trim.qtyCheck === 'sufficient' && trim.inspection === 'pass') {
+trim.isReady = 1;
+} else {
+trim.isReady = 0;
+}
+
+// Add log
+order.logs.unshift({
+user: currentUser.realName,
+role: currentUser.role,
+time: timeStr,
+module: 'trim',
+summary: `辅料 <b>${trim.name}</b> ${fieldLabels[field]}从 <span class="old-val">${valLabels[field][oldVal]||'未设置'}</span> 改为 <span class="new-val">${valLabel}</span> <span style="color:var(--text-3);font-size:11px">（${dateStr}）</span>${trim.isReady?'，已自动标记为齐套':''}`,
+});
+
+closeModal();
+showToast(`${trim.name} ${fieldLabels[field]}已更新`);
+renderMaterialManage();
+}
+
+// (addTrim replaced by addMaterialForm)
+
+// ==================== Permission Settings (Admin) ====================
+function openPermSettings(orderId) {
+const order = orders.find(o=>o.id===orderId);
+if (!order) return;
+if (!order.permissions) order.permissions = {basicInfo:[],materials:[],production:[]};
+const perms = order.permissions;
+
+const roles = [
+{key:'coordinator',name:'理单'},
+{key:'merchandiser',name:'跟单'},
+{key:'customer',name:'客户端'},
+];
+const sections = [
+{key:'basicInfo',label:'编辑基础信息',desc:'可修改订单号、款号等（理单默认可编辑颜色尺码配比）'},
+{key:'materials',label:'管理物料进度',desc:'可添加/修改面料和辅料详情及状态（理单默认有此权限）'},
+{key:'production',label:'更新生产进度',desc:'可更新T&A各阶段状态和日期（理单默认可更新打样+出货阶段）'},
+];
+
+const html = sections.map(sec => {
+const items = roles.map(r => {
+const checked = perms[sec.key].includes(r.key);
+return `<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;padding:6px 0">
+<input type="checkbox" ${checked?'checked':''} onchange="togglePerm('${sec.key}','${r.key}',this.checked)"> ${r.name}
+</label>`;
+}).join('');
+return `<div style="margin-bottom:16px">
+<div style="font-weight:600;font-size:13px;margin-bottom:4px">${sec.label}</div>
+<div style="font-size:11px;color:var(--text-3);margin-bottom:6px">${sec.desc}</div>
+<div style="display:flex;gap:16px;flex-wrap:wrap">${items}</div>
+</div>`;
+}).join('');
+
+document.getElementById('modal-sheet').innerHTML = `
+<div class="modal-title">⚙️ 订单权限设置 - ${order.orderNo}</div>
+<div style="font-size:12px;color:var(--text-2);text-align:center;margin-bottom:16px">管理员默认拥有全部权限，以下设置针对其他角色</div>
+${html}
+<div style="margin-top:16px;padding:10px;background:var(--primary-light);border-radius:8px;font-size:12px;color:var(--primary)">
+💡 默认权限：理单可编辑颜色尺码配比+管理物料详情+更新打样/出货阶段；跟单可更新物料状态+全部生产进度。以上勾选可额外授权其他模块。
+</div>
+<button class="modal-close" onclick="closePermSettings()">完成</button>
+`;
+showModal();
+}
+
+function togglePerm(section, role, checked) {
+const order = orders.find(o=>o.id===currentOrderId);
+if (!order.permissions) order.permissions = {basicInfo:[],materials:[],production:[]};
+const arr = order.permissions[section];
+if (checked && !arr.includes(role)) arr.push(role);
+if (!checked) {
+const idx = arr.indexOf(role);
+if (idx >= 0) arr.splice(idx, 1);
+}
+}
+
+function closePermSettings() {
+closeModal();
+showToast('权限设置已保存');
+const now = new Date();
+const dateStr = `2026-08-10`;
+const timeStr = `${dateStr} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+const order = orders.find(o=>o.id===currentOrderId);
+order.logs.unshift({
+user:currentUser.realName,role:currentUser.role,time:timeStr,module:'order',
+summary:`更新了订单权限设置 <span style="color:var(--text-3);font-size:11px">（${dateStr}）</span>`,
+});
+renderDetail();
+}
+
+// ==================== ORDER CREATE / EDIT ====================
+let createColors = [{name:'黑色',code:'BLK'},{name:'白色',code:'WHT'}];
+let createSizes = ['S','M','L','XL'];
+let createMatrix = {};
+let editMode = false;
+let editingOrderId = null;
+let styleImageData = null;
+
+function initMatrix() {
+createColors = [{name:'黑色',code:'BLK'},{name:'白色',code:'WHT'}];
+createSizes = ['S','M','L','XL'];
+createMatrix = {};
+renderMatrixEditor();
+}
+
+// --- Image Upload ---
+function triggerImgUpload() {
+document.getElementById('f-style-image').click();
+}
+
+function handleImgUpload(event) {
+const file = event.target.files[0];
+if (!file) return;
+if (file.size > 5 * 1024 * 1024) { showToast('图片不能超过5MB'); return; }
+const reader = new FileReader();
+reader.onload = function(e) {
+styleImageData = e.target.result;
+const area = document.getElementById('img-upload-area');
+area.classList.add('has-img');
+area.innerHTML = `<img src="${styleImageData}" alt="款式图"><button class="img-remove-btn" onclick="event.stopPropagation();removeStyleImage()" title="移除图片">×</button>`;
+};
+reader.readAsDataURL(file);
+}
+
+function removeStyleImage() {
+styleImageData = null;
+document.getElementById('f-style-image').value = '';
+resetImgUploadArea();
+}
+
+function resetImgUploadArea() {
+const area = document.getElementById('img-upload-area');
+area.classList.remove('has-img');
+area.innerHTML = '<div class="img-upload-icon">📷</div><div class="img-upload-text">点击上传款式图（支持 JPG/PNG）</div>';
+}
+
+// --- Create / Edit Mode ---
+function goCreate() {
+editMode = false;
+editingOrderId = null;
+styleImageData = null;
+document.getElementById('create-page-title').textContent = '新建订单';
+document.getElementById('submit-btn').textContent = '创建订单';
+goPage('create');
+initMatrix();
+resetImgUploadArea();
+// Reset form fields to defaults
+document.getElementById('f-orderno').value = 'PO-2026-' + String(orders.length + 1).padStart(4, '0');
+document.getElementById('f-styleno').value = '';
+document.getElementById('f-stylename').value = '';
+document.getElementById('f-customer').value = '';
+document.getElementById('f-factory').value = '';
+document.getElementById('f-season').value = '2026SS';
+document.getElementById('f-category').value = '';
+document.getElementById('f-delivery').value = '2026-10-15';
+// Populate assignment dropdowns
+populateAssignDropdowns(null);
+}
+
+function populateAssignDropdowns(order) {
+const assignRow = document.getElementById('assign-row');
+const companyUsers = currentCompany.users.filter(u => u.status === 'active');
+const coordinators = companyUsers.filter(u => u.role === 'coordinator');
+const merchandisers = companyUsers.filter(u => u.role === 'merchandiser');
+
+// Populate datalist suggestions (always available for reference)
+const dlCoord = document.getElementById('dl-coordinators');
+const dlMer = document.getElementById('dl-merchandisers');
+dlCoord.innerHTML = coordinators.map(u => `<option value="${u.realName}">`).join('');
+dlMer.innerHTML = merchandisers.map(u => `<option value="${u.realName}">`).join('');
+
+if (currentUser.role === 'admin') {
+// Admin can type any name freely
+assignRow.style.display = 'flex';
+const coordInput = document.getElementById('f-coordinator');
+const merInput = document.getElementById('f-merchandiser');
+coordInput.disabled = false;
+coordInput.style.background = '';
+coordInput.style.color = '';
+coordInput.value = order ? (order.coordinatorName || '') : '';
+coordInput.placeholder = '';
+merInput.disabled = false;
+merInput.style.background = '';
+merInput.style.color = '';
+merInput.value = order ? (order.merchandiserName || '') : '';
+merInput.placeholder = '';
+} else if (currentUser.role === 'coordinator') {
+// Coordinator is auto-assigned, can type merchandiser name
+assignRow.style.display = 'flex';
+const coordInput = document.getElementById('f-coordinator');
+const merInput = document.getElementById('f-merchandiser');
+coordInput.value = currentUser.realName;
+coordInput.disabled = true;
+coordInput.style.background = 'var(--bg)';
+coordInput.style.color = 'var(--text-2)';
+merInput.value = order ? (order.merchandiserName || '') : '';
+merInput.placeholder = '';
+} else {
+assignRow.style.display = 'none';
+}
+}
+
+function goEdit(id) {
+const order = orders.find(o => o.id === id);
+if (!order) return;
+// Permission check: admin can edit any order, coordinator can edit their own orders
+const perms = order.permissions || {basicInfo:[]};
+const canEdit = currentUser.role === 'admin' ||
+(currentUser.role === 'coordinator' && (order.coordinatorId === currentUser.id || order.coordinatorName === currentUser.realName)) ||
+perms.basicInfo.includes(currentUser.role);
+if (!canEdit) {
+showToast('您无编辑此订单基础信息的权限');
+return;
+}
+editMode = true;
+editingOrderId = id;
+goPage('create');
+// Set title and button
+document.getElementById('create-page-title').textContent = '编辑订单';
+document.getElementById('submit-btn').textContent = '保存修改';
+// Fill form fields
+document.getElementById('f-orderno').value = order.orderNo;
+document.getElementById('f-styleno').value = order.styleNo;
+document.getElementById('f-stylename').value = order.styleName;
+document.getElementById('f-customer').value = order.customerName;
+document.getElementById('f-factory').value = order.factoryName;
+document.getElementById('f-season').value = order.season;
+document.getElementById('f-category').value = order.category;
+document.getElementById('f-delivery').value = order.deliveryDate;
+// Populate assignment dropdowns
+populateAssignDropdowns(order);
+// Load style image
+styleImageData = order.styleImage || null;
+if (styleImageData) {
+const area = document.getElementById('img-upload-area');
+area.classList.add('has-img');
+area.innerHTML = `<img src="${styleImageData}" alt="款式图"><button class="img-remove-btn" onclick="event.stopPropagation();removeStyleImage()" title="移除图片">×</button>`;
+} else {
+resetImgUploadArea();
+}
+// Initialize matrix from existing order data
+initMatrixFromOrder(order);
+}
+
+function initMatrixFromOrder(order) {
+// Extract sizes from order data
+const sizeSet = new Set();
+order.colorSizes.forEach(c => {
+Object.keys(c).forEach(k => {
+if (k !== 'color' && k !== 'code' && c[k] !== undefined) sizeSet.add(k);
+});
+});
+createSizes = Array.from(sizeSet);
+if (createSizes.length === 0) createSizes = ['S','M','L','XL'];
+// Extract colors
+createColors = order.colorSizes.map(c => ({name: c.color, code: c.code, rowColor: c.rowColor || null}));
+if (createColors.length === 0) createColors = [{name:'黑色',code:'BLK'}];
+// Build matrix data
+createMatrix = {};
+createColors.forEach((c, ci) => {
+createSizes.forEach(s => {
+const val = order.colorSizes[ci][s];
+if (val !== undefined && val > 0) createMatrix[`${ci}-${s}`] = String(val);
+});
+});
+renderMatrixEditor();
+}
+
+function renderMatrixEditor() {
+const container = document.getElementById('matrix-editor');
+let html = '<div class="matrix-scroll"><table><thead><tr><th style="min-width:90px">颜色 / 尺码</th>';
+createSizes.forEach((s, si) => {
+html += `<th class="size-col"><input class="size-input" type="text" value="${s}" placeholder="尺码" onchange="updateSizeName(${si},this.value)" oninput="updateSizeName(${si},this.value)"><button class="del-size" onclick="delSize(${si})" title="删除此列">×</button></th>`;
+});
+html += '<th class="add-size-col" onclick="addSizeCol()">＋</th>';
+html += '<th>小计</th></tr></thead><tbody>';
+let total = 0;
+createColors.forEach((c, ci) => {
+let rowTotal = 0;
+createSizes.forEach(s => {
+const key = `${ci}-${s}`;
+const val = createMatrix[key] || '';
+if (val) rowTotal += parseInt(val);
+});
+const bgStyle = c.rowColor ? `background:${c.rowColor}22;` : '';
+const dotColor = c.rowColor || '#e0e0e0';
+const dotBorder = c.rowColor ? '1px solid rgba(0,0,0,0.1)' : '1px dashed #bbb';
+html += `<tr style="${bgStyle}"><td class="color-header" style="min-width:90px">
+<span class="row-color-dot" style="background:${dotColor};border:${dotBorder}" onclick="toggleEditorRowColor(${ci})" title="点击设置行颜色"></span>
+<input class="color-input" type="text" value="${c.name}" placeholder="颜色名" onchange="updateColorName(${ci},'name',this.value)" oninput="updateColorName(${ci},'name',this.value)">
+<input class="color-code" type="text" value="${c.code}" placeholder="代码" onchange="updateColorName(${ci},'code',this.value)" oninput="updateColorName(${ci},'code',this.value)">
+<button class="del-color" onclick="delColor(${ci})" title="删除此行">×</button>
+<div id="editor-row-color-${ci}" style="display:none"></div>
+</td>`;
+createSizes.forEach(s => {
+const key = `${ci}-${s}`;
+const val = createMatrix[key] || '';
+html += `<td><input class="qty-input" type="number" value="${val}" placeholder="0" oninput="updateQty(${ci},'${s}',this.value)" min="0"></td>`;
+});
+html += `<td class="total-cell" id="row-total-${ci}">${rowTotal.toLocaleString()}</td></tr>`;
+total += rowTotal;
+});
+html += `<tr><td class="total-cell">合计</td>`;
+createSizes.forEach((s, si) => {
+let colTotal = 0;
+createColors.forEach((c, ci) => {
+const val = createMatrix[`${ci}-${s}`];
+if (val) colTotal += parseInt(val);
+});
+html += `<td class="total-cell" id="col-total-${si}">${colTotal.toLocaleString()}</td>`;
+});
+html += `<td class="add-size-col"></td><td class="total-cell" id="matrix-grand-total">${total.toLocaleString()}</td></tr></tbody></table></div>`;
+container.innerHTML = html;
+document.getElementById('matrix-total').textContent = total.toLocaleString() + ' 件';
+}
+
+function toggleEditorRowColor(ci) {
+const pickerId = `editor-row-color-${ci}`;
+const container = document.getElementById(pickerId);
+if (!container) return;
+if (container.style.display === 'none') {
+if (activeRowColorPicker && activeRowColorPicker !== container) {
+activeRowColorPicker.style.display = 'none';
+}
+const currentColor = createColors[ci].rowColor || '';
+container.innerHTML = `<div class="row-color-picker">
+${rowColorPalette.map(c=>`<div class="row-color-swatch ${c===currentColor?'selected':''}" style="background:${c}" onclick="setEditorRowColor(${ci},'${c}')"></div>`).join('')}
+${currentColor?`<span class="row-color-clear" onclick="setEditorRowColor(${ci},'')">清除</span>`:''}
+</div>`;
+container.style.display = 'block';
+activeRowColorPicker = container;
+} else {
+container.style.display = 'none';
+activeRowColorPicker = null;
+}
+}
+
+function setEditorRowColor(ci, color) {
+createColors[ci].rowColor = color || null;
+const picker = document.getElementById(`editor-row-color-${ci}`);
+if (picker) picker.style.display = 'none';
+activeRowColorPicker = null;
+renderMatrixEditor();
+}
+
+// Only update totals without re-rendering (keeps input focus)
+function updateQty(ci, size, val) {
+createMatrix[`${ci}-${size}`] = val;
+recalcTotals();
+}
+
+function updateSizeName(si, val) {
+const oldSize = createSizes[si];
+const newSize = val.trim() || '尺码' + (si+1);
+createSizes[si] = newSize;
+// Migrate matrix data keys
+createColors.forEach((c, ci) => {
+const oldKey = `${ci}-${oldSize}`;
+const newKey = `${ci}-${newSize}`;
+if (oldKey !== newKey && createMatrix[oldKey] !== undefined) {
+createMatrix[newKey] = createMatrix[oldKey];
+delete createMatrix[oldKey];
+}
+});
+// Don't re-render, just keep typing
+}
+
+function updateColorName(ci, field, val) {
+createColors[ci][field] = val;
+}
+
+function recalcTotals() {
+let total = 0;
+createColors.forEach((c, ci) => {
+let rowTotal = 0;
+createSizes.forEach(s => {
+const val = createMatrix[`${ci}-${s}`];
+if (val) rowTotal += parseInt(val);
+});
+const el = document.getElementById(`row-total-${ci}`);
+if (el) el.textContent = rowTotal.toLocaleString();
+total += rowTotal;
+});
+createSizes.forEach((s, si) => {
+let colTotal = 0;
+createColors.forEach((c, ci) => {
+const val = createMatrix[`${ci}-${s}`];
+if (val) colTotal += parseInt(val);
+});
+const el = document.getElementById(`col-total-${si}`);
+if (el) el.textContent = colTotal.toLocaleString();
+});
+const gt = document.getElementById('matrix-grand-total');
+if (gt) gt.textContent = total.toLocaleString();
+document.getElementById('matrix-total').textContent = total.toLocaleString() + ' 件';
+}
+
+function addColor() {
+createColors.push({name:'', code:'', rowColor:null});
+renderMatrixEditor();
+// Focus the new color name input
+setTimeout(() => {
+const inputs = document.querySelectorAll('.color-input');
+if (inputs.length > 0) { inputs[inputs.length-1].focus(); }
+}, 50);
+}
+
+function addSize() {
+const size = prompt('输入尺码（如：XXL 或 38）');
+if (!size) return;
+createSizes.push(size);
+renderMatrixEditor();
+}
+
+// Add size column directly (no prompt)
+function addSizeCol() {
+createSizes.push('尺码' + (createSizes.length + 1));
+renderMatrixEditor();
+// Focus the new size input
+setTimeout(() => {
+const inputs = document.querySelectorAll('.size-input');
+if (inputs.length > 0) { inputs[inputs.length-1].focus(); inputs[inputs.length-1].select(); }
+}, 50);
+}
+
+function delSize(si) {
+if (createSizes.length <= 1) { showToast('至少保留一个尺码'); return; }
+const size = createSizes[si];
+createColors.forEach((c, ci) => {
+delete createMatrix[`${ci}-${size}`];
+});
+createSizes.splice(si, 1);
+renderMatrixEditor();
+}
+
+function delColor(ci) {
+if (createColors.length <= 1) { showToast('至少保留一个颜色'); return; }
+const oldLen = createColors.length;
+// Shift matrix data down: each color after ci moves up by 1
+for (let i = ci; i < oldLen - 1; i++) {
+createSizes.forEach(s => {
+createMatrix[`${i}-${s}`] = createMatrix[`${i+1}-${s}`] || '';
+});
+}
+// Clean up the last row's old keys
+createSizes.forEach(s => delete createMatrix[`${oldLen-1}-${s}`]);
+createColors.splice(ci, 1);
+renderMatrixEditor();
+}
+
+async function submitOrder() {
+const orderNo = document.getElementById('f-orderno').value.trim();
+const styleNo = document.getElementById('f-styleno').value.trim();
+const styleName = document.getElementById('f-stylename').value.trim();
+const customer = document.getElementById('f-customer').value.trim();
+const factory = document.getElementById('f-factory').value.trim();
+const season = document.getElementById('f-season').value.trim();
+const category = document.getElementById('f-category').value.trim();
+const delivery = document.getElementById('f-delivery').value;
+
+// Get assignment info (free text input, match by name)
+const coordInput = document.getElementById('f-coordinator');
+const merInput = document.getElementById('f-merchandiser');
+let coordName = coordInput ? coordInput.value.trim() : '未分配';
+let merName = merInput ? merInput.value.trim() : '未分配';
+if (!coordName) coordName = '未分配';
+if (!merName) merName = '未分配';
+
+// Auto-match: find registered user by realName to link permissions
+let coordId = null, merId = null;
+if (coordName !== '未分配' && currentCompany.users) {
+const matched = currentCompany.users.find(u => u.realName === coordName && u.role === 'coordinator');
+if (matched) coordId = matched.id;
+}
+if (merName !== '未分配' && currentCompany.users) {
+const matched = currentCompany.users.find(u => u.realName === merName && u.role === 'merchandiser');
+if (matched) merId = matched.id;
+}
+// If coordinator is auto-assigned (coordinator role creating order), override
+if (currentUser.role === 'coordinator') {
+coordId = currentUser.id;
+coordName = currentUser.realName;
+}
+
+if (!orderNo || !styleNo) { showToast('请填写订单号和款号'); return; }
+
+let totalQty = 0;
+createColors.forEach((c,ci) => {
+createSizes.forEach(s => {
+const val = createMatrix[`${ci}-${s}`];
+if (val) totalQty += parseInt(val);
+});
+});
+
+if (totalQty === 0) { showToast('请填写颜色尺码数量'); return; }
+
+// Build colorSizes array for API
+const colorSizeApiData = createColors.map((c, ci) => {
+const items = [];
+createSizes.forEach(s => {
+const val = createMatrix[`${ci}-${s}`];
+if (val) {
+  items.push({
+    color: c.name || '未命名',
+    colorCode: c.code || null,
+    size: s,
+    quantity: parseInt(val) || 0,
+    rowColor: c.rowColor || null,
+  });
+}
+});
+return items;
+}).flat();
+
+const requestBody = {
+  orderNo,
+  customerName: customer,
+  styleNo,
+  styleName: styleName || '未命名',
+  season,
+  category,
+  colorSizes: colorSizeApiData,
+  deliveryDate: delivery,
+  factoryName: factory,
+  coordinatorName: coordName,
+  coordinatorId: coordId,
+  merchandiserName: merName,
+  merchandiserId: merId,
+};
+
+try {
+  if (editMode && editingOrderId !== null) {
+    // EDIT MODE: update existing order via API
+    const res = await api('PATCH', '/orders/' + editingOrderId, requestBody);
+    showToast('订单已更新');
+    await loadOrders(); // Reload orders from API
+    setTimeout(()=>{ goDetail(editingOrderId); }, 500);
+  } else {
+    // CREATE MODE: create new order via API
+    const res = await api('POST', '/orders', requestBody);
+    showToast('订单创建成功！');
+    await loadOrders(); // Reload orders from API
+    setTimeout(()=>{ goPage('orders'); }, 500);
+  }
+} catch(e) {
+  // Error already shown by api()
+}
+}
+
+// ==================== NAVIGATION ====================
+function goPage(page) {
+document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+const el = document.getElementById('page-' + page);
+if (el) {
+el.classList.add('active');
+el.classList.add('slide-anim');
+setTimeout(()=>el.classList.remove('slide-anim'), 300);
+}
+// Scroll to top
+const content = el.querySelector('.content');
+if (content) content.scrollTop = 0;
+// Update bottom nav active states
+document.querySelectorAll('.bottom-nav').forEach(nav => {
+nav.querySelectorAll('.nav-item').forEach(item => {
+item.classList.remove('active');
+const onclick = item.getAttribute('onclick') || '';
+if (page === 'orders' && onclick.includes("goPage('orders')")) item.classList.add('active');
+if (page === 'profile' && onclick.includes("goPage('profile')")) item.classList.add('active');
+});
+});
+}
+
+// ==================== ROW COLOR PICKER ====================
+const rowColorPalette = ['#FF6B6B','#FF9F43','#FECA57','#26DE81','#2BCBBA','#45AAF2','#4B7BEC','#A55EEA','#FC8EAC','#778CA3','#26C281','#E67E22','#9B59B6','#3498DB','#E74C3C','#1ABC9C'];
+let activeRowColorPicker = null;
+
+function toggleRowColorPicker(orderId, colorIndex) {
+const pickerId = `row-color-pick-${colorIndex}`;
+const container = document.getElementById(pickerId);
+if (!container) return;
+if (container.style.display === 'none') {
+if (activeRowColorPicker && activeRowColorPicker !== container) {
+activeRowColorPicker.style.display = 'none';
+}
+const order = orders.find(o=>o.id===orderId);
+const currentColor = order.colorSizes[colorIndex].rowColor || '';
+container.innerHTML = `<div class="row-color-picker">
+${rowColorPalette.map(c=>`<div class="row-color-swatch ${c===currentColor?'selected':''}" style="background:${c}" onclick="setRowColor(${orderId},${colorIndex},'${c}')"></div>`).join('')}
+${currentColor?`<span class="row-color-clear" onclick="setRowColor(${orderId},${colorIndex},'')">清除</span>`:''}
+</div>`;
+container.style.display = 'block';
+activeRowColorPicker = container;
+} else {
+container.style.display = 'none';
+activeRowColorPicker = null;
+}
+}
+
+function setRowColor(orderId, colorIndex, color) {
+const order = orders.find(o=>o.id===orderId);
+if (!order) return;
+order.colorSizes[colorIndex].rowColor = color || null;
+const picker = document.getElementById(`row-color-pick-${colorIndex}`);
+if (picker) picker.style.display = 'none';
+activeRowColorPicker = null;
+renderDetail();
+}
+
+// Click outside to close color picker
+document.addEventListener('click', function(e) {
+if (activeRowColorPicker && !e.target.closest('.row-color-pick') && !e.target.closest('.row-color-dot') && !e.target.closest('.row-color-picker')) {
+activeRowColorPicker.style.display = 'none';
+activeRowColorPicker = null;
+}
+}, true);
+
+// ==================== PROFILE / TEAM MANAGEMENT ====================
+function renderProfile() {
+const container = document.getElementById('profile-content');
+if (!currentUser) { container.innerHTML = ''; return; }
+const isAdmin = currentUser.role === 'admin';
+const userCount = (currentCompany.users && currentCompany.users.length) || currentCompany.userCount || 0;
+const orderCount = orders.length;
+// For coordinator/merchandiser, count only their assigned orders
+let myOrderCount = orderCount;
+if (currentUser.role === 'coordinator') {
+myOrderCount = orders.filter(o => o.coordinatorId === currentUser.id || o.coordinatorName === currentUser.realName).length;
+} else if (currentUser.role === 'merchandiser') {
+myOrderCount = orders.filter(o => o.merchandiserId === currentUser.id || o.merchandiserName === currentUser.realName).length;
+} else if (currentUser.role === 'customer') {
+myOrderCount = orders.filter(o => o.customerId === currentUser.customerId).length;
+}
+
+// Profile header
+let html = `
+<div style="background:linear-gradient(135deg,#1677ff 0%,#0958d9 100%);padding:30px 24px;color:#fff">
+<div style="display:flex;align-items:center;gap:14px">
+<div style="width:56px;height:56px;border-radius:50%;background:${currentUser.avatar};display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;color:#fff">${currentUser.realName.charAt(0)}</div>
+<div>
+<div style="font-size:20px;font-weight:700">${currentUser.realName}</div>
+<div style="font-size:13px;opacity:.8;margin-top:2px">${roleNames[currentUser.role]} | ${currentUser.username}</div>
+</div>
+</div>
+<div style="display:flex;gap:24px;margin-top:18px">
+<div><div style="font-size:22px;font-weight:700">${currentCompany.name}</div><div style="font-size:12px;opacity:.7;margin-top:2px">公司代码: ${currentCompany.code}</div></div>
+</div>
+<div style="display:flex;gap:20px;margin-top:14px;font-size:13px;opacity:.9">
+<div>最近登录: ${currentUser.lastLogin || '-'}</div>
+</div>
+</div>
+`;
+
+// Quick stats
+html += `
+<div style="display:flex;padding:0;gap:1px;background:var(--border)">
+<div style="flex:1;background:var(--card);padding:16px;text-align:center">
+<div style="font-size:24px;font-weight:700;color:var(--primary)">${myOrderCount}</div>
+<div style="font-size:12px;color:var(--text-3);margin-top:2px">${currentUser.role === 'admin' ? '总订单' : '我的订单'}</div>
+</div>
+<div style="flex:1;background:var(--card);padding:16px;text-align:center">
+<div style="font-size:24px;font-weight:700;color:var(--success)">${userCount}</div>
+<div style="font-size:12px;color:var(--text-3);margin-top:2px">团队成员</div>
+</div>
+</div>
+`;
+
+if (isAdmin) {
+// Team management section
+html += `
+<div class="section-card">
+<div class="section-title"><span>团队成员 (${userCount})</span><button class="btn-small" onclick="showAddMember()">添加成员</button></div>
+<div id="team-list">
+${renderTeamList()}
+</div>
+</div>
+`;
+
+// Show unregistered members (from API company info)
+const unregisteredNames = currentCompany.unregistered || [];
+// Fallback: also check local orders if API didn't provide this
+if (unregisteredNames.length === 0) {
+orders.forEach(order => {
+if (order.coordinatorName && order.coordinatorName !== '未分配' && !order.coordinatorId) {
+if (!unregisteredNames.find(n => n.name === order.coordinatorName && n.role === '理单')) {
+unregisteredNames.push({name: order.coordinatorName, role: '理单', orders: [order.orderNo]});
+} else {
+unregisteredNames.find(n => n.name === order.coordinatorName && n.role === '理单').orders.push(order.orderNo);
+}
+}
+if (order.merchandiserName && order.merchandiserName !== '未分配' && !order.merchandiserId) {
+if (!unregisteredNames.find(n => n.name === order.merchandiserName && n.role === '跟单')) {
+unregisteredNames.push({name: order.merchandiserName, role: '跟单', orders: [order.orderNo]});
+} else {
+unregisteredNames.find(n => n.name === order.merchandiserName && n.role === '跟单').orders.push(order.orderNo);
+}
+}
+});
+}
+if (unregisteredNames.length > 0) {
+html += `
+<div class="section-card" style="border:1px solid #ffe7ba;background:#fff7e630">
+<div class="section-title"><span style="color:#fa8c16">待注册成员 (${unregisteredNames.length})</span></div>
+<div style="font-size:12px;color:#fa8c16;margin-bottom:10px">以下名字已在订单中被指定，但尚未注册为团队成员。添加对应账号后，系统将自动关联权限。</div>
+${unregisteredNames.map(n => `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #ffe7ba">
+<div style="width:36px;height:36px;border-radius:50%;background:#fa8c16;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:600">${n.name.charAt(0)}</div>
+<div style="flex:1">
+<div style="font-size:14px;font-weight:500">${n.name} <span style="font-size:11px;padding:1px 6px;border-radius:4px;background:#fff7e6;color:#fa8c16">${n.role}</span></div>
+<div style="font-size:11px;color:var(--text-3);margin-top:2px">涉及订单: ${n.orders.join(', ')}</div>
+</div>
+<button class="btn-small" style="height:30px;font-size:12px;padding:0 10px;background:#fa8c16;color:#fff;border-color:#fa8c16" onclick="quickRegisterMember('${n.name}','${n.role==='理单'?'coordinator':'merchandiser'}')">快速注册</button>
+</div>`).join('')}
+</div>
+`;
+}
+
+// Company info
+html += `
+<div class="section-card">
+<div class="section-title">公司信息</div>
+<div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+<div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">公司名称</span><span>${currentCompany.name}</span></div>
+<div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">公司代码</span><span>${currentCompany.code}</span></div>
+<div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">创建日期</span><span>${currentCompany.createdAt}</span></div>
+<div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">团队人数</span><span>${userCount} 人</span></div>
+</div>
+</div>
+`;
+} else {
+// Non-admin: show own info only
+html += `
+<div class="section-card">
+<div class="section-title">个人信息</div>
+<div style="display:flex;flex-direction:column;gap:8px;font-size:13px">
+<div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">姓名</span><span>${currentUser.realName}</span></div>
+<div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">账号</span><span>${currentUser.username}</span></div>
+<div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">角色</span><span>${roleNames[currentUser.role]}</span></div>
+<div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">手机号</span><span>${currentUser.phone || '未填写'}</span></div>
+<div style="display:flex;justify-content:space-between"><span style="color:var(--text-2)">最近登录</span><span>${currentUser.lastLogin || '-'}</span></div>
+</div>
+</div>
+<div class="section-card">
+<div class="section-title">团队成员</div>
+<div style="font-size:13px;color:var(--text-2)">共 ${userCount} 名成员</div>
+${currentCompany.users.map(u=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)">
+<div style="width:36px;height:36px;border-radius:50%;background:${u.avatar};display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:600">${u.realName.charAt(0)}</div>
+<div style="flex:1">
+<div style="font-size:14px;font-weight:500">${u.realName} <span style="font-size:11px;padding:1px 6px;border-radius:4px;background:${roleColors[u.role]}22;color:${roleColors[u.role]}">${roleNames[u.role]}</span></div>
+<div style="font-size:11px;color:var(--text-3);margin-top:2px">最近登录: ${u.lastLogin || '未登录'}</div>
+</div>
+</div>`).join('')}
+</div>
+`;
+}
+
+// Logout button
+html += `
+<div style="padding:16px">
+<button class="btn-primary" style="background:#ff4d4f" onclick="doLogout()">退出登录</button>
+</div>
+`;
+
+container.innerHTML = html;
+}
+
+function renderTeamList() {
+return currentCompany.users.map(u => {
+const isSelf = u.id === currentUser.id;
+const statusTag = u.status === 'disabled'
+? '<span style="font-size:11px;padding:1px 6px;border-radius:4px;background:#fff0f0;color:#ff4d4f">已禁用</span>'
+: '<span style="font-size:11px;padding:1px 6px;border-radius:4px;background:#f6ffed;color:#52c41a">正常</span>';
+// Count orders assigned to this user
+let myOrders = 0;
+if (u.role === 'coordinator') {
+myOrders = currentCompany.orders.filter(o => o.coordinatorId === u.id || o.coordinatorName === u.realName).length;
+} else if (u.role === 'merchandiser') {
+myOrders = currentCompany.orders.filter(o => o.merchandiserId === u.id || o.merchandiserName === u.realName).length;
+}
+const orderTag = (u.role === 'coordinator' || u.role === 'merchandiser')
+? `<span style="font-size:11px;padding:1px 6px;border-radius:4px;background:#e6f7ff;color:#1677ff;margin-left:2px">${myOrders} 单</span>`
+: '';
+return `<div style="display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)">
+<div style="width:40px;height:40px;border-radius:50%;background:${u.avatar};display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;font-weight:600">${u.realName.charAt(0)}</div>
+<div style="flex:1">
+<div style="font-size:14px;font-weight:500">
+${u.realName}
+${isSelf ? '<span style="font-size:11px;color:var(--text-3);margin-left:4px">(我)</span>' : ''}
+<span style="font-size:11px;padding:1px 6px;border-radius:4px;background:${roleColors[u.role]}22;color:${roleColors[u.role]};margin-left:4px">${roleNames[u.role]}</span>
+${orderTag}
+${statusTag}
+</div>
+<div style="font-size:12px;color:var(--text-3);margin-top:3px">
+${u.username} | ${u.phone || '未填'} | 最近登录: ${u.lastLogin || '未登录'}
+</div>
+</div>
+${isSelf ? '' : `<button class="btn-small" style="height:30px;font-size:12px;padding:0 10px;background:var(--bg);color:var(--text)" onclick="showEditMember(${u.id})">管理</button>`}
+</div>`;
+}).join('');
+}
+
+function showAddMember() {
+document.getElementById('modal-sheet').innerHTML = `
+<div class="modal-title">添加团队成员</div>
+<div style="display:flex;flex-direction:column;gap:12px;padding:0 4px">
+<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">姓名 *</label><input id="m-realname" type="text" placeholder="成员姓名" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px"></div>
+<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">登录账号 *</label><input id="m-username" type="text" placeholder="登录用户名" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px"></div>
+<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">密码 *</label><input id="m-password" type="text" value="123456" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px"></div>
+<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">手机号</label><input id="m-phone" type="tel" placeholder="手机号码" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px"></div>
+<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">角色 *</label>
+<select id="m-role" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px">
+<option value="coordinator">理单</option>
+<option value="merchandiser">跟单</option>
+<option value="admin">管理员</option>
+<option value="customer">客户端</option>
+</select></div>
+</div>
+<button class="btn-primary" style="margin-top:16px" onclick="doAddMember()">确认添加</button>
+<button class="modal-close" onclick="closeModal()">取消</button>
+`;
+showModal();
+}
+
+function doAddMember() {
+const realName = document.getElementById('m-realname').value.trim();
+const username = document.getElementById('m-username').value.trim();
+const password = document.getElementById('m-password').value;
+const phone = document.getElementById('m-phone').value.trim();
+const role = document.getElementById('m-role').value;
+
+if (!realName || !username || !password) { showToast('请填写必填项'); return; }
+if (currentCompany.users.find(u => u.username === username)) { showToast('用户名已存在'); return; }
+
+const avatarColors = ['#1677ff','#13c2c2','#52c41a','#722ed1','#fa8c16','#eb2f96','#2f54eb','#fa541c'];
+
+try {
+  const res = await api('POST', '/company/members', {
+    username, realName, role, password, phone,
+  });
+  closeModal();
+  showToast('已添加成员: ' + realName + '，已自动关联订单权限');
+  await loadCompanyInfo();
+  renderProfile();
+} catch(e) {
+  // Error already shown by api()
+}
+}
+
+function quickRegisterMember(realName, role) {
+document.getElementById('modal-sheet').innerHTML = `
+<div class="modal-title">快速注册 - ${realName}</div>
+<div style="display:flex;flex-direction:column;gap:12px;padding:0 4px">
+<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">姓名 *</label><input id="m-realname" type="text" value="${realName}" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px"></div>
+<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">登录账号 *</label><input id="m-username" type="text" placeholder="登录用户名" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px"></div>
+<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">密码 *</label><input id="m-password" type="text" value="123456" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px"></div>
+<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">手机号</label><input id="m-phone" type="tel" placeholder="手机号码" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px"></div>
+<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">角色 *</label>
+<select id="m-role" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px">
+<option value="coordinator" ${role==='coordinator'?'selected':''}>理单</option>
+<option value="merchandiser" ${role==='merchandiser'?'selected':''}>跟单</option>
+<option value="admin">管理员</option>
+<option value="customer">客户端</option>
+</select></div>
+</div>
+<button class="btn-primary" style="margin-top:16px" onclick="doAddMember()">确认注册</button>
+<button class="modal-close" onclick="closeModal()">取消</button>
+`;
+showModal();
+}
+
+// Sync function kept for local fallback only (API handles this on backend)
+function syncMemberToOrders(member) {
+orders.forEach(order => {
+if (member.role === 'coordinator' && order.coordinatorName === member.realName && !order.coordinatorId) {
+order.coordinatorId = member.id;
+}
+if (member.role === 'merchandiser' && order.merchandiserName === member.realName && !order.merchandiserId) {
+order.merchandiserId = member.id;
+}
+});
+}
+
+function showEditMember(uid) {
+const user = currentCompany.users.find(u => u.id === uid);
+if (!user) return;
+const isLastAdmin = user.role === 'admin' && currentCompany.users.filter(u => u.role === 'admin').length <= 1;
+
+document.getElementById('modal-sheet').innerHTML = `
+<div class="modal-title">管理成员 - ${user.realName}</div>
+<div style="display:flex;flex-direction:column;gap:12px;padding:0 4px">
+<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">姓名</label><input id="e-realname" type="text" value="${user.realName}" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px"></div>
+<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">登录账号</label><input id="e-username" type="text" value="${user.username}" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px"></div>
+<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">密码</label><input id="e-password" type="text" value="${user.password}" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px"></div>
+<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">手机号</label><input id="e-phone" type="tel" value="${user.phone || ''}" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px"></div>
+<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">角色</label>
+<select id="e-role" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px" ${isLastAdmin?'disabled':''}>
+<option value="admin" ${user.role==='admin'?'selected':''}>管理员</option>
+<option value="coordinator" ${user.role==='coordinator'?'selected':''}>理单</option>
+<option value="merchandiser" ${user.role==='merchandiser'?'selected':''}>跟单</option>
+<option value="customer" ${user.role==='customer'?'selected':''}>客户端</option>
+</select>
+${isLastAdmin?'<div style="font-size:11px;color:var(--text-3);margin-top:4px">最后一个管理员，不可更改角色</div>':''}
+</div>
+<div><label style="font-size:12px;color:var(--text-2);margin-bottom:4px;display:block">账号状态</label>
+<select id="e-status" style="width:100%;height:40px;border:1px solid var(--border);border-radius:8px;padding:0 12px;font-size:14px" ${isLastAdmin?'disabled':''}>
+<option value="active" ${user.status==='active'?'selected':''}>正常</option>
+<option value="disabled" ${user.status==='disabled'?'selected':''}>禁用</option>
+</select>
+</div>
+<div style="font-size:12px;color:var(--text-3);padding:8px 0">最近登录: ${user.lastLogin || '未登录'}</div>
+</div>
+<div style="display:flex;gap:10px;margin-top:16px">
+<button class="btn-primary" style="flex:1" onclick="doEditMember(${uid})">保存</button>
+${isLastAdmin ? '' : `<button style="flex:1;height:46px;background:#fff0f0;color:#ff4d4f;border:1px solid #ffccc7;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer" onclick="doDeleteMember(${uid})">删除</button>`}
+</div>
+<button class="modal-close" onclick="closeModal()">取消</button>
+`;
+showModal();
+}
+
+async function doEditMember(uid) {
+const realName = document.getElementById('e-realname').value.trim();
+const username = document.getElementById('e-username').value.trim();
+const password = document.getElementById('e-password').value;
+const phone = document.getElementById('e-phone').value.trim();
+const role = document.getElementById('e-role').value;
+const status = document.getElementById('e-status').value;
+
+if (!realName || !username) { showToast('姓名和账号不能为空'); return; }
+
+try {
+  await api('PUT', '/company/members/' + uid, {
+    realName, username, password, phone, role, status,
+  });
+  closeModal();
+  showToast('已保存修改');
+  await loadCompanyInfo();
+  renderProfile();
+} catch(e) {
+  // Error already shown by api()
+}
+}
+
+async function doDeleteMember(uid) {
+const user = currentCompany.users.find(u => u.id === uid);
+if (!user) return;
+
+try {
+  await api('DELETE', '/company/members/' + uid);
+  closeModal();
+  showToast('已删除成员: ' + user.realName);
+  await loadCompanyInfo();
+  renderProfile();
+} catch(e) {
+  // Error already shown by api()
+}
+}
+
+function doLogout() {
+authToken = '';
+localStorage.removeItem('authToken');
+currentUser = null;
+currentCompany = null;
+currentOrderId = null;
+orders = [];
+goPage('login');
+showToast('已退出登录');
+}
+
+// ==================== UTILS ====================
+function showToast(msg) {
+const toast = document.getElementById('toast');
+toast.textContent = msg;
+toast.classList.add('show');
+setTimeout(()=>toast.classList.remove('show'), 2000);
+}
+
+function showModal() { document.getElementById('modal').classList.add('show'); }
+function closeModal(e) {
+if (e && e.target.id !== 'modal') return;
+document.getElementById('modal').classList.remove('show');
+window._tempPct = undefined;
+}
+
+// Enter key on login
+document.getElementById('login-pass').addEventListener('keydown', e => {
+if (e.key === 'Enter') doLogin();
+});
+document.getElementById('login-user').addEventListener('keydown', e => {
+if (e.key === 'Enter') document.getElementById('login-pass').focus();
+});
+document.getElementById('login-company').addEventListener('keydown', e => {
+if (e.key === 'Enter') document.getElementById('login-user').focus();
+});
+
+// ==================== AUTO LOGIN CHECK ====================
+(async function() {
+  if (authToken) {
+    try {
+      const me = await api('GET', '/auth/me');
+      currentUser = me;
+      currentCompany = { id: me.companyId, code: me.companyCode, name: me.companyName };
+      await loadCompanyInfo();
+      await loadOrders();
+      goPage('orders');
+    } catch(e) {
+      // Token expired or invalid, stay on login page
+      authToken = '';
+      localStorage.removeItem('authToken');
+    }
+  }
+})();
+</script>
+</body>
+</html>

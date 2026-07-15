@@ -1,0 +1,29 @@
+{
+  "name": "garment-order-frontend",
+  "version": "1.0.0",
+  "description": "外贸服装订单操作小程序 - 前端 (uni-app, 小程序+H5双端)",
+  "scripts": {
+    "dev:mp-weixin": "uni -p mp-weixin",
+    "dev:h5": "uni",
+    "build:mp-weixin": "uni build -p mp-weixin",
+    "build:h5": "uni build",
+    "type-check": "vue-tsc --noEmit"
+  },
+  "dependencies": {
+    "vue": "^3.4.0",
+    "pinia": "^2.1.7",
+    "@dcloudio/uni-app": "3.0.0-3090920231108001",
+    "@dcloudio/uni-components": "3.0.0-3090920231108001",
+    "@dcloudio/uni-mp-weixin": "3.0.0-3090920231108001",
+    "@dcloudio/uni-h5": "3.0.0-3090920231108001",
+    "dayjs": "^1.11.10"
+  },
+  "devDependencies": {
+    "@dcloudio/uni-cli-shared": "3.0.0-3090920231108001",
+    "@dcloudio/vite-plugin-uni": "3.0.0-3090920231108001",
+    "typescript": "^5.3.3",
+    "vue-tsc": "^1.8.27",
+    "vite": "^4.5.0",
+    "sass": "^1.69.0"
+  }
+}

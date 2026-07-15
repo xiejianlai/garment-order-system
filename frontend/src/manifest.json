@@ -1,0 +1,41 @@
+{
+  "name": "外贸服装订单系统",
+  "appid": "",
+  "description": "外贸服装订单操作小程序",
+  "versionName": "1.0.0",
+  "versionCode": "100",
+  "transformPx": false,
+
+  "mp-weixin": {
+    "appid": "your-wx-appid",
+    "setting": {
+      "urlCheck": false,
+      "es6": true,
+      "minified": true
+    },
+    "usingComponents": true,
+    "permission": {},
+    "requiredBackgroundModes": [],
+    "lazyCodeLoading": "requiredComponents"
+  },
+
+  "h5": {
+    "router": {
+      "mode": "history",
+      "base": "/h5/"
+    },
+    "title": "外贸服装订单管理系统",
+    "template": "index.html",
+    "devServer": {
+      "port": 8080,
+      "proxy": {
+        "/api": {
+          "target": "http://localhost:3000",
+          "changeOrigin": true
+        }
+      }
+    }
+  },
+
+  "vueVersion": "3"
+}
