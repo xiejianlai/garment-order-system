@@ -20,7 +20,7 @@ import { getToken, removeToken, removeUserInfo } from './auth';
 // 小程序端: 需配置为实际服务器地址 (需要在微信后台配置合法域名)
 // H5端: 开发时走 vite proxy 代理, 生产环境配置为实际地址
 // #ifdef MP-WEIXIN
-const BASE_URL = 'https://your-api-domain.com/api';
+const BASE_URL = 'https://garment-order-api.onrender.com/api';
 // #endif
 // #ifdef H5
 const BASE_URL = '/api'; // 开发环境走proxy代理
