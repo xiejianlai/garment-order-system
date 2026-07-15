@@ -2,10 +2,14 @@
   "name": "garment-order-backend",
   "version": "2.0.0",
   "description": "外贸服装订单操作小程序 - 后端服务（多公司+理单/跟单）",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
-    "build": "npx nest build",
+    "build": "npx tsc",
     "start": "npx nest start",
     "start:dev": "npx nest start --watch",
+    "start:prod": "node dist/main",
     "start:prod": "node dist/main",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
@@ -30,7 +34,6 @@
     "class-validator": "^0.14.1",
     "dayjs": "^1.11.10",
     "multer": "^1.4.5-lts.1",
-    "mysql2": "^3.23.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.1",
