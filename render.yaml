@@ -1,20 +1,16 @@
-services:
-  # PostgreSQL 数据库
-  - type: pserv
-    name: garment-order-db
+databases:
+  - name: garment-order-db
+    databaseName: garment_order
     plan: free
-    envVars:
-      - key: POSTGRES_DB
-        value: garment_order
 
-  # NestJS 后端服务
+services:
   - type: web
     name: garment-order-api
+    runtime: node
     plan: free
-    env: node
     region: oregon
     buildCommand: cd backend && npm install && npx prisma generate && npm run build
-    startCommand: cd backend && npx prisma db push && npx prisma generate && node dist/main.js
+    startCommand: cd backend && npx prisma db push && npx ts-node prisma/seed.ts || true && node dist/main.js
     envVars:
       - key: DATABASE_URL
         fromDatabase:
