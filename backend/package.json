@@ -10,7 +10,6 @@
     "start": "npx nest start",
     "start:dev": "npx nest start --watch",
     "start:prod": "node dist/main",
-    "start:prod": "node dist/main",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node prisma/seed.ts",
