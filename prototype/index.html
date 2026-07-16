@@ -806,8 +806,6 @@ logs:[
 
 // Link demo orders to company 1 (fallback data)
 _mockCompanies[0].orders = demoOrders;
-// Global orders — loaded from API
-let orders = [];
 
 const statusMap = {
 draft:{label:'草稿',cls:'st-draft'},
@@ -862,6 +860,12 @@ const username = document.getElementById('login-user').value.trim();
 const password = document.getElementById('login-pass').value;
 if (!companyCode || !username || !password) { showToast('请填写完整信息'); return; }
 
+const btn = document.querySelector('.btn-primary');
+const origText = btn.textContent;
+btn.textContent = '正在登录...';
+btn.disabled = true;
+btn.style.opacity = '0.6';
+
 try {
   const res = await api('POST', '/auth/login', { companyCode, username, password });
   authToken = res.token;
@@ -879,6 +883,10 @@ try {
   }, 300);
 } catch(e) {
   // Error already shown by api()
+} finally {
+  btn.textContent = origText;
+  btn.disabled = false;
+  btn.style.opacity = '1';
 }
 }
 
