@@ -10,7 +10,7 @@ services:
     plan: free
     region: oregon
     buildCommand: cd backend && npm install && npx prisma generate
-    startCommand: cd backend && npx prisma db push && node dist/src/main.js
+    startCommand: cd backend && npx prisma db push && node dist/prisma/seed.js && node dist/src/main.js
     envVars:
       - key: DATABASE_URL
         fromDatabase:
