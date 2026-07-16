@@ -283,12 +283,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hira
 <label>密码</label>
 <input id="login-pass" type="password" placeholder="输入密码" value="123456">
 </div>
-<button class="btn-primary" onclick="doLogin()">登 录</button>
+<button class="btn-primary" id="login-btn" onclick="doLogin()">登 录</button>
 <div class="login-hint">演示公司 DEMO01 | admin/liwen/wangli/chenli/zhanggen/liugen/zhaogen/john | 密码 123456</div>
 <div style="height:1px;background:var(--border);margin:20px 0"></div>
-<button class="wx-login-btn" onclick="showToast('微信登录需小程序环境')">💚 微信一键登录</button>
+<button class="wx-login-btn" id="wx-login-btn" onclick="handleWxLogin()">💚 微信一键登录</button>
 <div style="text-align:center;margin-top:16px">
-<span style="font-size:13px;color:var(--primary);cursor:pointer" onclick="showRegister()">没有账号？注册新公司 →</span>
+<span style="font-size:13px;color:var(--primary);cursor:pointer" id="show-register-link" onclick="showRegister()">没有账号？注册新公司 →</span>
 </div>
 </div>
 <div class="login-card" id="login-card-register" style="display:none">
@@ -317,9 +317,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hira
 <label>设置密码 *</label>
 <input id="reg-admin-pass" type="password" placeholder="设置登录密码">
 </div>
-<button class="btn-primary" onclick="doRegister()">注 册</button>
+<button class="btn-primary" id="register-btn" onclick="doRegister()">注 册</button>
 <div style="text-align:center;margin-top:16px">
-<span style="font-size:13px;color:var(--primary);cursor:pointer" onclick="showLogin()">← 返回登录</span>
+<span style="font-size:13px;color:var(--primary);cursor:pointer" id="back-login-link" onclick="showLogin()">← 返回登录</span>
 </div>
 </div>
 </div>
@@ -531,6 +531,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hira
 </div>
 
 <script>
+console.log('✅ 脚本开始执行 - JS引擎正常运行');
 // ==================== API CONFIG ====================
 const API_BASE = window.API_BASE || ''; // Same origin - no prefix needed when served by NestJS // Set to backend URL when connected
 let authToken = localStorage.getItem('authToken') || '';
@@ -2899,16 +2900,64 @@ document.getElementById('modal').classList.remove('show');
 window._tempPct = undefined;
 }
 
-// Enter key on login
-document.getElementById('login-pass').addEventListener('keydown', e => {
-if (e.key === 'Enter') doLogin();
-});
-document.getElementById('login-user').addEventListener('keydown', e => {
-if (e.key === 'Enter') document.getElementById('login-pass').focus();
-});
-document.getElementById('login-company').addEventListener('keydown', e => {
-if (e.key === 'Enter') document.getElementById('login-user').focus();
-});
+// ==================== RELIABLE EVENT BINDING ====================
+// Using addEventListener (works in script scope, no window dependency)
+function handleWxLogin() { showToast('微信登录需小程序环境'); }
+
+try {
+  // Login button - primary binding via addEventListener (more reliable than inline onclick)
+  const loginBtnEl = document.getElementById('login-btn');
+  if (loginBtnEl) loginBtnEl.addEventListener('click', function(e) {
+    e.preventDefault();
+    doLogin();
+  });
+
+  // WeChat login button
+  const wxBtnEl = document.getElementById('wx-login-btn');
+  if (wxBtnEl) wxBtnEl.addEventListener('click', function(e) {
+    e.preventDefault();
+    handleWxLogin();
+  });
+
+  // Show register link
+  const regLinkEl = document.getElementById('show-register-link');
+  if (regLinkEl) regLinkEl.addEventListener('click', function(e) {
+    e.preventDefault();
+    showRegister();
+  });
+
+  // Register button
+  const regBtnEl = document.getElementById('register-btn');
+  if (regBtnEl) regBtnEl.addEventListener('click', function(e) {
+    e.preventDefault();
+    doRegister();
+  });
+
+  // Back to login link
+  const backLinkEl = document.getElementById('back-login-link');
+  if (backLinkEl) backLinkEl.addEventListener('click', function(e) {
+    e.preventDefault();
+    showLogin();
+  });
+
+  // Enter key on login
+  document.getElementById('login-pass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+  });
+  document.getElementById('login-user').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('login-pass').focus();
+  });
+  document.getElementById('login-company').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('login-user').focus();
+  });
+} catch(bindErr) {
+  // If binding fails, show visible error on page so user knows JS is running
+  console.error('Event binding error:', bindErr);
+  const errDiv = document.createElement('div');
+  errDiv.style.cssText = 'position:fixed;top:10px;left:10px;background:#ff4d4f;color:white;padding:10px;border-radius:8px;z-index:99999;font-size:14px;max-width:300px';
+  errDiv.textContent = '页面加载异常: ' + bindErr.message;
+  document.body.appendChild(errDiv);
+}
 
 // ==================== AUTO LOGIN CHECK ====================
 (async function() {
