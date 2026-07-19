@@ -55,13 +55,34 @@ export class OrdersService {
       if (!dto.coordinatorName) dto.coordinatorName = user.realName;
     }
 
+    // 智能匹配或创建客户：根据 customerName 查找/创建客户
+    let customerId: bigint = BigInt(1); // 兜底，先尝试查找
+    const customerName = dto.customerName.trim();
+    if (customerName) {
+      const existingCustomer = await this.prisma.customer.findFirst({
+        where: { companyId, customerName },
+      });
+      if (existingCustomer) {
+        customerId = existingCustomer.id;
+      } else {
+        const newCustomer = await this.prisma.customer.create({
+          data: {
+            companyId,
+            customerCode: 'CUST-' + Date.now().toString().slice(-6),
+            customerName,
+          },
+        });
+        customerId = newCustomer.id;
+      }
+    }
+
     const order = await this.prisma.$transaction(async (tx) => {
       const newOrder = await tx.order.create({
         data: {
           companyId,
           orderNo: dto.orderNo,
-          customerName: dto.customerName,
-          customerId: BigInt(1), // 后续改为动态查找或创建客户
+          customerName,
+          customerId,
           styleNo: dto.styleNo,
           styleName: dto.styleName,
           season: dto.season,

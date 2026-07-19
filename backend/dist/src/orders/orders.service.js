@@ -56,13 +56,33 @@ let OrdersService = class OrdersService {
             if (!dto.coordinatorName)
                 dto.coordinatorName = user.realName;
         }
+        let customerId = BigInt(1);
+        const customerName = dto.customerName.trim();
+        if (customerName) {
+            const existingCustomer = await this.prisma.customer.findFirst({
+                where: { companyId, customerName },
+            });
+            if (existingCustomer) {
+                customerId = existingCustomer.id;
+            }
+            else {
+                const newCustomer = await this.prisma.customer.create({
+                    data: {
+                        companyId,
+                        customerCode: 'CUST-' + Date.now().toString().slice(-6),
+                        customerName,
+                    },
+                });
+                customerId = newCustomer.id;
+            }
+        }
         const order = await this.prisma.$transaction(async (tx) => {
             const newOrder = await tx.order.create({
                 data: {
                     companyId,
                     orderNo: dto.orderNo,
-                    customerName: dto.customerName,
-                    customerId: BigInt(1),
+                    customerName,
+                    customerId,
                     styleNo: dto.styleNo,
                     styleName: dto.styleName,
                     season: dto.season,
