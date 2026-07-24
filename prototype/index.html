@@ -967,7 +967,7 @@ try {
     permissions: { basicInfo:['coordinator'], materials:['coordinator','merchandiser'], production:['merchandiser'] },
     fabrics: o.fabrics || [],
     trims: o.trims || [],
-    colorSizes: o.colorSizes || [],
+    colorSizes: transformColorSizes(o.colorSizes),
     taStages: o.taStages || [],
     logs: o.logs || [],
   }));
@@ -1059,6 +1059,25 @@ renderOrderList();
 function filterOrders() { renderOrderList(); }
 
 // ==================== ORDER DETAIL ====================
+// Convert flat colorSizes from API [{color,size,quantity,colorCode,rowColor}] to matrix format [{color,code,rowColor,S:100,M:200,...}]
+function transformColorSizes(apiColorSizes) {
+if (!apiColorSizes || !Array.isArray(apiColorSizes)) return [];
+// Already matrix format (has 'color' but no 'size' property)
+if (apiColorSizes.length > 0 && apiColorSizes[0].size === undefined) return apiColorSizes;
+// Transform flat format to matrix format
+const colorMap = {};
+const colorOrder = [];
+apiColorSizes.forEach(cs => {
+const key = cs.color;
+if (!colorMap[key]) {
+colorMap[key] = { color: cs.color, code: cs.colorCode || '', rowColor: cs.rowColor || null };
+colorOrder.push(key);
+}
+colorMap[key][cs.size] = (colorMap[key][cs.size] || 0) + (cs.quantity || 0);
+});
+return colorOrder.map(k => colorMap[k]);
+}
+
 async function goDetail(id) {
 currentOrderId = id;
 goPage('detail');
@@ -1070,6 +1089,7 @@ try {
   const order = {
     ...cached,
     ...detail,
+    colorSizes: transformColorSizes(detail.colorSizes),
     image: detail.image || '👕',
     styleImage: detail.garmentImageUrl || (cached ? cached.styleImage : ''),
     permissions: { basicInfo:['coordinator'], materials:['coordinator','merchandiser'], production:['merchandiser'] },
