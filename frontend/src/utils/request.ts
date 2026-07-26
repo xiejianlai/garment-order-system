@@ -84,14 +84,22 @@ export function request<T = any>(options: RequestOptions): Promise<T> {
 
         // HTTP 状态码处理
         if (res.statusCode === 401) {
-          // Token 失效
-          removeToken();
-          removeUserInfo();
-          uni.showToast({ title: '登录已过期，请重新登录', icon: 'none' });
-          setTimeout(() => {
-            uni.reLaunch({ url: '/pages/login/index' });
-          }, 1500);
-          reject(new Error('未授权'));
+          // 登录/注册接口的 401 是凭证错误，不是 token 过期，直接抛错不跳转
+          const isAuthEndpoint = url.startsWith('/auth/login') || url.startsWith('/auth/wx-login') || url.startsWith('/auth/register');
+          if (!isAuthEndpoint) {
+            // Token 失效
+            removeToken();
+            removeUserInfo();
+            uni.showToast({ title: '登录已过期，请重新登录', icon: 'none' });
+            setTimeout(() => {
+              uni.reLaunch({ url: '/pages/login/index' });
+            }, 1500);
+          }
+          const errMsg = responseData?.message || '未授权';
+          if (showError && isAuthEndpoint) {
+            uni.showToast({ title: errMsg, icon: 'none' });
+          }
+          reject(new Error(errMsg));
           return;
         }
 
