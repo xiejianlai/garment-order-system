@@ -45,10 +45,10 @@ export const useUserStore = defineStore('user', () => {
   }
 
   /**
-   * 小程序登录 — 微信 code
+   * 小程序登录 — 微信 code + 公司代码
    */
-  async function loginByWechat(code: string, nickName?: string, avatarUrl?: string) {
-    const result = await loginWithWechat(code, nickName, avatarUrl);
+  async function loginByWechat(code: string, companyCode: string, nickName?: string, avatarUrl?: string) {
+    const result = await loginWithWechat(code, companyCode, nickName, avatarUrl);
     setToken(result.token);
     setUserInfo(result.user);
     userInfo.value = result.user;

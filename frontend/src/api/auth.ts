@@ -20,9 +20,9 @@ export function loginWithPassword(username: string, password: string) {
   return http.post<LoginResult>('/auth/login', { username, password });
 }
 
-/** 小程序端登录 — 微信 code */
-export function loginWithWechat(code: string, nickName?: string, avatarUrl?: string) {
-  return http.post<LoginResult>('/auth/wx-login', { code, nickName, avatarUrl });
+/** 小程序端登录 — 微信 code + 公司代码 */
+export function loginWithWechat(code: string, companyCode: string, nickName?: string, avatarUrl?: string) {
+  return http.post<LoginResult>('/auth/wx-login', { code, companyCode, nickName, avatarUrl });
 }
 
 /** 获取当前用户信息（刷新页面时恢复登录态） */

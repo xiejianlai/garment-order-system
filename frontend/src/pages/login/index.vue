@@ -53,9 +53,18 @@
     </view>
     <!-- #endif -->
 
-    <!-- ============ 微信小程序端: 微信一键登录 ============ -->
+    <!-- ============ 微信小程序端: 公司代码 + 微信一键登录 ============ -->
     <!-- #ifdef MP-WEIXIN -->
     <view class="form-section">
+      <view class="input-group">
+        <input
+          v-model="formData.companyCode"
+          class="input-field"
+          type="text"
+          placeholder="请输入公司代码"
+          placeholder-class="placeholder"
+        />
+      </view>
       <button class="wx-login-btn" :loading="loading" open-type="getUserInfo" @tap="handleWxLogin">
         <text class="wx-login-text">微信一键登录</text>
       </button>
@@ -98,6 +107,7 @@ const showDevAccounts = ref(true); // 开发环境显示测试账号
 const formData = reactive({
   username: '',
   password: '',
+  companyCode: '',
 });
 
 /**
@@ -128,6 +138,11 @@ async function handleLogin() {
  * 微信小程序登录 — uni.login() 获取 code
  */
 async function handleWxLogin() {
+  if (!formData.companyCode) {
+    uni.showToast({ title: '请输入公司代码', icon: 'none' });
+    return;
+  }
+
   loading.value = true;
   try {
     // 1. 调用 uni.login 获取 code
@@ -144,8 +159,8 @@ async function handleWxLogin() {
       return;
     }
 
-    // 2. 用 code 调用后端换 JWT
-    await userStore.loginByWechat(loginRes.code);
+    // 2. 用 code + companyCode 调用后端换 JWT
+    await userStore.loginByWechat(loginRes.code, formData.companyCode);
     uni.showToast({ title: '登录成功', icon: 'success' });
     setTimeout(() => {
       uni.switchTab({ url: '/pages/orders/index' });
