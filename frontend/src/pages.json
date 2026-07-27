@@ -47,6 +47,10 @@
       {
         "pagePath": "pages/orders/index",
         "text": "订单"
+      },
+      {
+        "pagePath": "pages/trim-manage/index",
+        "text": "辅料"
       }
     ]
   },
