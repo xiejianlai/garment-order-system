@@ -14,15 +14,16 @@ export interface OrderListResult {
 
 export interface CreateOrderPayload {
   orderNo: string;
-  customerId: number;
+  customerName: string;
   styleNo: string;
   styleName?: string;
   season?: string;
   category?: string;
   garmentImageUrl?: string;
   deliveryDate: string;
-  assignedFactoryId?: number;
-  merchandiserId?: number;
+  factoryName?: string;
+  coordinatorName?: string;
+  merchandiserName?: string;
   colorSizes: ColorSizeItem[];
   remark?: string;
 }
@@ -71,12 +72,12 @@ export function checkTrimsReady(orderId: number) {
   }>(`/trims/check/${orderId}`);
 }
 
-/** 获取客户列表（下拉选项） */
-export function getCustomerOptions() {
-  return http.get<{ id: number; customerName: string; customerCode: string }[]>('/orders/options/customers');
-}
-
-/** 获取工厂列表（下拉选项） */
-export function getFactoryOptions() {
-  return http.get<{ id: number; factoryName: string; factoryCode: string }[]>('/orders/options/factories');
+/** 获取订单下拉选项（客户、工厂、理单、跟单） */
+export function getOrderOptions() {
+  return http.get<{
+    customers: { id: number; code: string; name: string }[];
+    factories: { id: number; code: string; name: string; type: string }[];
+    coordinators: { id: number; name: string }[];
+    merchandisers: { id: number; name: string }[];
+  }>('/orders/options');
 }

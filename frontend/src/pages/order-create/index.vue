@@ -25,20 +25,23 @@
         />
       </view>
 
+      <!-- 客户：可填写可选择 -->
       <view class="form-item">
         <text class="form-label required">客户</text>
-        <picker
-          mode="selector"
-          :range="customerNames"
-          @change="onCustomerChange"
-        >
-          <view class="form-picker">
-            <text :class="{ 'placeholder': !form.customerId }">
-              {{ selectedCustomerName || '请选择客户' }}
-            </text>
-            <text class="picker-arrow">></text>
-          </view>
-        </picker>
+        <input
+          v-model="form.customerName"
+          class="form-input"
+          placeholder="输入或选择客户名称"
+          placeholder-class="placeholder"
+        />
+        <scroll-view v-if="options.customers.length > 0" scroll-x class="chip-bar" show-scrollbar="false">
+          <text
+            v-for="c in options.customers"
+            :key="c.id"
+            class="chip"
+            @tap="form.customerName = c.name"
+          >{{ c.name }}</text>
+        </scroll-view>
       </view>
 
       <view class="form-item">
@@ -61,21 +64,24 @@
         />
       </view>
 
+      <!-- 季节 + 品类：可填写可选择 -->
       <view class="form-row">
         <view class="form-item half">
           <text class="form-label">季节</text>
-          <picker
-            mode="selector"
-            :range="seasons"
-            @change="onSeasonChange"
-          >
-            <view class="form-picker">
-              <text :class="{ 'placeholder': !form.season }">
-                {{ form.season || '请选择' }}
-              </text>
-              <text class="picker-arrow">></text>
-            </view>
-          </picker>
+          <input
+            v-model="form.season"
+            class="form-input"
+            placeholder="如: 春季"
+            placeholder-class="placeholder"
+          />
+          <view class="chip-bar-static">
+            <text
+              v-for="s in seasonOptions"
+              :key="s"
+              class="chip-sm"
+              @tap="form.season = s"
+            >{{ s }}</text>
+          </view>
         </view>
         <view class="form-item half">
           <text class="form-label">品类</text>
@@ -85,6 +91,14 @@
             placeholder="如: 卫衣"
             placeholder-class="placeholder"
           />
+          <view class="chip-bar-static">
+            <text
+              v-for="c in categoryOptions"
+              :key="c"
+              class="chip-sm"
+              @tap="form.category = c"
+            >{{ c }}</text>
+          </view>
         </view>
       </view>
 
@@ -104,20 +118,63 @@
         </picker>
       </view>
 
+      <!-- 工厂：可填写可选择 -->
       <view class="form-item">
         <text class="form-label">分配工厂</text>
-        <picker
-          mode="selector"
-          :range="factoryNames"
-          @change="onFactoryChange"
-        >
-          <view class="form-picker">
-            <text :class="{ 'placeholder': !form.assignedFactoryId }">
-              {{ selectedFactoryName || '请选择工厂（可稍后分配）' }}
-            </text>
-            <text class="picker-arrow">></text>
+        <input
+          v-model="form.factoryName"
+          class="form-input"
+          placeholder="输入或选择工厂名称"
+          placeholder-class="placeholder"
+        />
+        <scroll-view v-if="options.factories.length > 0" scroll-x class="chip-bar" show-scrollbar="false">
+          <text
+            v-for="f in options.factories"
+            :key="f.id"
+            class="chip"
+            @tap="form.factoryName = f.name"
+          >{{ f.name }}</text>
+        </scroll-view>
+      </view>
+
+      <!-- 理单 + 跟单：可填写可选择 -->
+      <view class="form-row">
+        <view class="form-item half">
+          <text class="form-label">理单</text>
+          <input
+            v-model="form.coordinatorName"
+            class="form-input"
+            placeholder="输入或选择理单"
+            placeholder-class="placeholder"
+          />
+          <view class="chip-bar-static">
+            <text
+              v-for="c in options.coordinators"
+              :key="c.id"
+              class="chip-sm"
+              @tap="form.coordinatorName = c.name"
+            >{{ c.name }}</text>
+            <text v-if="options.coordinators.length === 0" class="chip-sm chip-empty">暂无已注册理单，可直接输入名字</text>
           </view>
-        </picker>
+        </view>
+        <view class="form-item half">
+          <text class="form-label">跟单</text>
+          <input
+            v-model="form.merchandiserName"
+            class="form-input"
+            placeholder="输入或选择跟单"
+            placeholder-class="placeholder"
+          />
+          <view class="chip-bar-static">
+            <text
+              v-for="m in options.merchandisers"
+              :key="m.id"
+              class="chip-sm"
+              @tap="form.merchandiserName = m.name"
+            >{{ m.name }}</text>
+            <text v-if="options.merchandisers.length === 0" class="chip-sm chip-empty">暂无已注册跟单，可直接输入名字</text>
+          </view>
+        </view>
       </view>
 
       <view class="form-item">
@@ -212,7 +269,7 @@
         <!-- 数据行 -->
         <view v-for="color in colors" :key="color" class="matrix-row">
           <view class="matrix-cell matrix-color-cell">{{ color }}</view>
-          <view v-for="size in sizes" :key="size" class="matrix-cell">
+          <view v-for="size in sizes" :key="size" class="matrix-cell matrix-input-cell">
             <input
               :value="getMatrixValue(color, size)"
               class="matrix-input"
@@ -252,22 +309,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { createOrder, getCustomerOptions, getFactoryOptions } from '../../api/orders';
+import { ref, reactive, computed } from 'vue';
+import { createOrder, getOrderOptions } from '../../api/orders';
 import { uploadFile } from '../../utils/request';
 import type { CreateOrderPayload } from '../../api/orders';
 
 // 表单数据
-const form = ref({
+const form = reactive({
   orderNo: '',
-  customerId: 0,
+  customerName: '',
   styleNo: '',
   styleName: '',
   season: '',
   category: '',
   garmentImageUrl: '',
   deliveryDate: '',
-  assignedFactoryId: 0,
+  factoryName: '',
+  coordinatorName: '',
+  merchandiserName: '',
   remark: '',
 });
 
@@ -280,19 +339,21 @@ const newSize = ref('');
 // 矩阵数据: { "红色|S": 100, "红色|M": 200 }
 const matrixData = ref<Record<string, number>>({});
 
-// 客户和工厂数据
-const customers = ref<any[]>([]);
-const factories = ref<any[]>([]);
-const seasons = ['春季', '夏季', '秋季', '冬季', '全年'];
+// 下拉选项数据
+const options = reactive<{
+  customers: { id: number; code: string; name: string }[];
+  factories: { id: number; code: string; name: string; type: string }[];
+  coordinators: { id: number; name: string }[];
+  merchandisers: { id: number; name: string }[];
+}>({
+  customers: [],
+  factories: [],
+  coordinators: [],
+  merchandisers: [],
+});
 
-const customerNames = computed(() => customers.value.map((c) => c.customerName));
-const factoryNames = computed(() => factories.value.map((f) => f.factoryName));
-const selectedCustomerName = computed(() =>
-  customers.value.find((c) => c.id === form.value.customerId)?.customerName || '',
-);
-const selectedFactoryName = computed(() =>
-  factories.value.find((f) => f.id === form.value.assignedFactoryId)?.factoryName || '',
-);
+const seasonOptions = ['春季', '夏季', '秋季', '冬季', '全年'];
+const categoryOptions = ['卫衣', 'T恤', '裤装', '外套', '连衣裙', '衬衫', '套装'];
 
 const submitting = ref(false);
 
@@ -301,15 +362,14 @@ const totalQty = computed(() => {
   return Object.values(matrixData.value).reduce((sum, n) => sum + (n || 0), 0);
 });
 
-// 页面加载时获取客户和工厂数据
+// 页面加载时获取选项数据
 async function loadOptions() {
   try {
-    const [customerRes, factoryRes] = await Promise.all([
-      getCustomerOptions(),
-      getFactoryOptions(),
-    ]);
-    customers.value = customerRes || [];
-    factories.value = factoryRes || [];
+    const res = await getOrderOptions();
+    options.customers = res.customers || [];
+    options.factories = res.factories || [];
+    options.coordinators = res.coordinators || [];
+    options.merchandisers = res.merchandisers || [];
   } catch (err) {
     console.error('加载选项数据失败:', err);
   }
@@ -342,7 +402,6 @@ function addColor() {
 function removeColor(idx: number) {
   const color = colors.value[idx];
   colors.value.splice(idx, 1);
-  // 清理矩阵中该颜色的数据
   sizes.value.forEach((size) => {
     delete matrixData.value[`${color}|${size}`];
   });
@@ -386,19 +445,8 @@ function clearMatrix() {
 }
 
 /** 选择器 */
-function onCustomerChange(e: any) {
-  const idx = e.detail.value;
-  form.value.customerId = customers.value[idx]?.id || 0;
-}
-function onFactoryChange(e: any) {
-  const idx = e.detail.value;
-  form.value.assignedFactoryId = factories.value[idx]?.id || 0;
-}
-function onSeasonChange(e: any) {
-  form.value.season = seasons[e.detail.value];
-}
 function onDateChange(e: any) {
-  form.value.deliveryDate = e.detail.value;
+  form.deliveryDate = e.detail.value;
 }
 
 /** 上传图片 */
@@ -411,7 +459,7 @@ async function uploadImage() {
       try {
         uni.showLoading({ title: '上传中...' });
         const result = await uploadFile('/files/upload/garment-image', tempPath, 'file');
-        form.value.garmentImageUrl = result.fileUrl;
+        form.garmentImageUrl = result.fileUrl;
         uni.showToast({ title: '上传成功', icon: 'success' });
       } catch (err: any) {
         uni.showToast({ title: '上传失败: ' + err.message, icon: 'none' });
@@ -424,20 +472,19 @@ async function uploadImage() {
 
 /** 提交创建订单 */
 async function handleSubmit() {
-  // 表单校验
-  if (!form.value.orderNo.trim()) {
+  if (!form.orderNo.trim()) {
     uni.showToast({ title: '请输入订单号', icon: 'none' });
     return;
   }
-  if (!form.value.customerId) {
-    uni.showToast({ title: '请选择客户', icon: 'none' });
+  if (!form.customerName.trim()) {
+    uni.showToast({ title: '请输入或选择客户', icon: 'none' });
     return;
   }
-  if (!form.value.styleNo.trim()) {
+  if (!form.styleNo.trim()) {
     uni.showToast({ title: '请输入款号', icon: 'none' });
     return;
   }
-  if (!form.value.deliveryDate) {
+  if (!form.deliveryDate) {
     uni.showToast({ title: '请选择交期', icon: 'none' });
     return;
   }
@@ -452,7 +499,6 @@ async function handleSubmit() {
 
   submitting.value = true;
   try {
-    // 构建颜色尺码数据
     const colorSizes: any[] = [];
     colors.value.forEach((color, colorIdx) => {
       sizes.value.forEach((size, sizeIdx) => {
@@ -469,17 +515,19 @@ async function handleSubmit() {
     });
 
     const payload: CreateOrderPayload = {
-      orderNo: form.value.orderNo.trim(),
-      customerId: form.value.customerId,
-      styleNo: form.value.styleNo.trim(),
-      styleName: form.value.styleName.trim() || undefined,
-      season: form.value.season || undefined,
-      category: form.value.category.trim() || undefined,
-      garmentImageUrl: form.value.garmentImageUrl || undefined,
-      deliveryDate: form.value.deliveryDate,
-      assignedFactoryId: form.value.assignedFactoryId || undefined,
+      orderNo: form.orderNo.trim(),
+      customerName: form.customerName.trim(),
+      styleNo: form.styleNo.trim(),
+      styleName: form.styleName.trim() || undefined,
+      season: form.season.trim() || undefined,
+      category: form.category.trim() || undefined,
+      garmentImageUrl: form.garmentImageUrl || undefined,
+      deliveryDate: form.deliveryDate,
+      factoryName: form.factoryName.trim() || undefined,
+      coordinatorName: form.coordinatorName.trim() || undefined,
+      merchandiserName: form.merchandiserName.trim() || undefined,
       colorSizes,
-      remark: form.value.remark.trim() || undefined,
+      remark: form.remark.trim() || undefined,
     };
 
     await createOrder(payload);
@@ -561,6 +609,7 @@ function handleCancel() {
   font-size: 28rpx;
   color: #2C2C2A;
   border: 1rpx solid #E0E0E0;
+  box-sizing: border-box;
 }
 .form-textarea {
   width: 100%;
@@ -571,6 +620,7 @@ function handleCancel() {
   font-size: 28rpx;
   color: #2C2C2A;
   border: 1rpx solid #E0E0E0;
+  box-sizing: border-box;
 }
 .form-picker {
   display: flex;
@@ -590,6 +640,41 @@ function handleCancel() {
 }
 .placeholder {
   color: #B4B2A9;
+}
+
+/* 可填写可选择的 chip 条 */
+.chip-bar {
+  display: flex;
+  white-space: nowrap;
+  padding: 8rpx 0 0;
+  gap: 10rpx;
+}
+.chip-bar-static {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 8rpx 0 0;
+  gap: 8rpx;
+}
+.chip {
+  display: inline-block;
+  padding: 6rpx 18rpx;
+  background: #E6F1FB;
+  color: #185FA5;
+  border-radius: 6rpx;
+  font-size: 24rpx;
+  flex-shrink: 0;
+}
+.chip-sm {
+  display: inline-block;
+  padding: 4rpx 14rpx;
+  background: #F1EFE8;
+  color: #5F5E5A;
+  border-radius: 6rpx;
+  font-size: 22rpx;
+}
+.chip-empty {
+  font-style: italic;
+  opacity: 0.6;
 }
 
 /* 图片上传 */
@@ -696,7 +781,7 @@ function handleCancel() {
   text-align: center;
 }
 
-/* 矩阵表格 */
+/* 矩阵表格 — 严格对齐 */
 .matrix-table {
   border: 1rpx solid #E0E0E0;
   border-radius: 8rpx;
@@ -713,47 +798,55 @@ function handleCancel() {
 .matrix-cell {
   flex: 1;
   text-align: center;
-  padding: 12rpx 4rpx;
+  padding: 12rpx 2rpx;
   font-size: 24rpx;
   border-right: 1rpx solid #f0f0f0;
   min-height: 56rpx;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
 }
 .matrix-cell:last-child {
   border-right: none;
 }
-.matrix-header {
-  background: #F1EFE8;
-}
+/* 颜色列和小计列固定宽度比例 */
 .matrix-corner {
   font-weight: 600;
   color: #5F5E5A;
-  min-width: 100rpx;
-  flex: 1.2;
+  flex: 1.5;
+  min-width: 120rpx;
   font-size: 22rpx;
 }
+.matrix-color-cell {
+  font-weight: 500;
+  color: #2C2C2A;
+  flex: 1.5;
+  min-width: 120rpx;
+}
+/* 尺码列与输入列保持一致 */
 .matrix-size-header {
   font-weight: 600;
   color: #5F5E5A;
-  min-width: 80rpx;
+  min-width: 90rpx;
+}
+.matrix-input-cell {
+  min-width: 90rpx;
+  padding: 4rpx 2rpx;
 }
 .matrix-total-header {
   font-weight: 600;
   color: #0F6E56;
   background: #E1F5EE;
-}
-.matrix-color-cell {
-  font-weight: 500;
-  color: #2C2C2A;
-  min-width: 100rpx;
   flex: 1.2;
+  min-width: 100rpx;
 }
 .matrix-total-cell {
   background: #F0FBF7;
   font-weight: 600;
   color: #0F6E56;
+  flex: 1.2;
+  min-width: 100rpx;
 }
 .matrix-footer {
   background: #F1EFE8;
@@ -769,6 +862,8 @@ function handleCancel() {
   color: #0F6E56;
   font-weight: 700;
   font-size: 28rpx;
+  flex: 1.2;
+  min-width: 100rpx;
 }
 .matrix-input {
   width: 100%;
