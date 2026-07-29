@@ -15,14 +15,19 @@ export interface LoginResult {
   user: UserInfo;
 }
 
-/** H5 端登录 — 用户名 + 密码 */
-export function loginWithPassword(username: string, password: string) {
-  return http.post<LoginResult>('/auth/login', { username, password });
+/** 登录 — 公司代码 + 用户名 + 密码 */
+export function loginWithPassword(companyCode: string, username: string, password: string) {
+  return http.post<LoginResult>('/auth/login', { companyCode, username, password });
 }
 
 /** 小程序端登录 — 微信 code + 公司代码 */
 export function loginWithWechat(code: string, companyCode: string, nickName?: string, avatarUrl?: string) {
   return http.post<LoginResult>('/auth/wx-login', { code, companyCode, nickName, avatarUrl });
+}
+
+/** 绑定微信 — 已登录用户，用 code 换 openid 绑定到当前账号 */
+export function bindWechat(code: string) {
+  return http.post<{ success: boolean; message: string }>('/auth/wx-bind', { code });
 }
 
 /** 获取当前用户信息（刷新页面时恢复登录态） */

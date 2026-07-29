@@ -28,6 +28,14 @@ export class AuthController {
     return this.authService.loginWithWechat(dto);
   }
 
+  @Post('wx-bind')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: '绑定微信（已登录用户用密码登录后绑定openid）' })
+  async wxBind(@CurrentUser() user: JwtPayload, @Body() dto: WxLoginDto) {
+    return this.authService.bindWechat(user.userId, dto.code);
+  }
+
   @Get('me')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()

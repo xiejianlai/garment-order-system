@@ -18,9 +18,18 @@
       <text class="app-subtitle">Garment Order Management</text>
     </view>
 
-    <!-- ============ H5 端: 用户名密码登录 ============ -->
+    <!-- ============ H5 端: 公司代码 + 用户名密码登录 ============ -->
     <!-- #ifdef H5 -->
     <view class="form-section">
+      <view class="input-group">
+        <input
+          v-model="formData.companyCode"
+          class="input-field"
+          type="text"
+          placeholder="请输入公司代码"
+          placeholder-class="placeholder"
+        />
+      </view>
       <view class="input-group">
         <input
           v-model="formData.username"
@@ -53,7 +62,7 @@
     </view>
     <!-- #endif -->
 
-    <!-- ============ 微信小程序端: 公司代码 + 微信一键登录 ============ -->
+    <!-- ============ 微信小程序端: 账号密码登录 + 微信一键登录 ============ -->
     <!-- #ifdef MP-WEIXIN -->
     <view class="form-section">
       <view class="input-group">
@@ -65,11 +74,44 @@
           placeholder-class="placeholder"
         />
       </view>
-      <button class="wx-login-btn" :loading="loading" open-type="getUserInfo" @tap="handleWxLogin">
+      <view class="input-group">
+        <input
+          v-model="formData.username"
+          class="input-field"
+          type="text"
+          placeholder="请输入用户名"
+          placeholder-class="placeholder"
+        />
+      </view>
+      <view class="input-group">
+        <input
+          v-model="formData.password"
+          class="input-field"
+          :type="showPassword ? 'text' : 'password'"
+          placeholder="请输入密码"
+          placeholder-class="placeholder"
+          @confirm="handleLogin"
+        />
+        <text class="toggle-pwd" @tap="showPassword = !showPassword">
+          {{ showPassword ? '隐藏' : '显示' }}
+        </text>
+      </view>
+      <button class="login-btn" :loading="loading" @tap="handleLogin">
+        登录
+      </button>
+
+      <!-- 分隔线 -->
+      <view class="divider">
+        <view class="divider-line"></view>
+        <text class="divider-text">或</text>
+        <view class="divider-line"></view>
+      </view>
+
+      <button class="wx-login-btn" :loading="wxLoading" @tap="handleWxLogin">
         <text class="wx-login-text">微信一键登录</text>
       </button>
       <view class="tips">
-        <text class="tips-text">提示: 首次使用需管理员在后台绑定您的微信号</text>
+        <text class="tips-text">首次使用请先用账号密码登录绑定微信</text>
       </view>
     </view>
     <!-- #endif -->
@@ -101,6 +143,7 @@ import { useUserStore } from '../../stores/user';
 
 const userStore = useUserStore();
 const loading = ref(false);
+const wxLoading = ref(false);
 const showPassword = ref(false);
 const showDevAccounts = ref(true); // 开发环境显示测试账号
 
@@ -111,9 +154,14 @@ const formData = reactive({
 });
 
 /**
- * H5 登录 — 用户名 + 密码
+ * 密码登录 — 公司代码 + 用户名 + 密码
+ * 小程序端登录成功后自动绑定微信
  */
 async function handleLogin() {
+  if (!formData.companyCode) {
+    uni.showToast({ title: '请输入公司代码', icon: 'none' });
+    return;
+  }
   if (!formData.username || !formData.password) {
     uni.showToast({ title: '请输入用户名和密码', icon: 'none' });
     return;
@@ -121,13 +169,29 @@ async function handleLogin() {
 
   loading.value = true;
   try {
-    await userStore.loginByPassword(formData.username, formData.password);
+    await userStore.loginByPassword(formData.companyCode, formData.username, formData.password);
     uni.showToast({ title: '登录成功', icon: 'success' });
+
+    // #ifdef MP-WEIXIN
+    // 小程序端：登录成功后自动绑定微信
+    try {
+      const loginRes = await new Promise<UniApp.LoginRes>((resolve, reject) => {
+        uni.login({ provider: 'weixin', success: resolve, fail: reject });
+      });
+      if (loginRes.code) {
+        await userStore.bindWxAccount(loginRes.code);
+        uni.showToast({ title: '微信已绑定，下次可一键登录', icon: 'none' });
+      }
+    } catch (bindErr) {
+      console.error('自动绑定微信失败:', bindErr);
+      // 绑定失败不影响登录
+    }
+    // #endif
+
     setTimeout(() => {
       uni.switchTab({ url: '/pages/orders/index' });
     }, 500);
   } catch (err: any) {
-    // 错误已由 request.ts 统一提示
     console.error('登录失败:', err.message);
   } finally {
     loading.value = false;
@@ -143,7 +207,7 @@ async function handleWxLogin() {
     return;
   }
 
-  loading.value = true;
+  wxLoading.value = true;
   try {
     // 1. 调用 uni.login 获取 code
     const loginRes = await new Promise<UniApp.LoginRes>((resolve, reject) => {
@@ -167,14 +231,23 @@ async function handleWxLogin() {
     }, 500);
   } catch (err: any) {
     console.error('微信登录失败:', err.message);
-    uni.showToast({ title: err.message || '微信登录失败', icon: 'none' });
+    if (err.message && err.message.includes('未绑定')) {
+      uni.showModal({
+        title: '需要绑定微信',
+        content: '首次使用请先用账号密码登录，系统会自动绑定您的微信。绑定后即可使用微信一键登录。',
+        showCancel: false,
+      });
+    } else {
+      uni.showToast({ title: err.message || '微信登录失败', icon: 'none' });
+    }
   } finally {
-    loading.value = false;
+    wxLoading.value = false;
   }
 }
 
 /** 填充测试账号 */
 function fillAccount(username: string, password: string) {
+  formData.companyCode = 'DEMO01';
   formData.username = username;
   formData.password = password;
 }
@@ -300,6 +373,24 @@ function fillAccount(username: string, password: string) {
 .tips-text {
   font-size: 22rpx;
   color: #888780;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  margin: 32rpx 0;
+}
+
+.divider-line {
+  flex: 1;
+  height: 1rpx;
+  background: #e0e0e0;
+}
+
+.divider-text {
+  padding: 0 24rpx;
+  font-size: 24rpx;
+  color: #B4B2A9;
 }
 
 .dev-accounts {

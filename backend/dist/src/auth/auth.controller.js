@@ -32,6 +32,9 @@ let AuthController = class AuthController {
     async wxLogin(dto) {
         return this.authService.loginWithWechat(dto);
     }
+    async wxBind(user, dto) {
+        return this.authService.bindWechat(user.userId, dto.code);
+    }
     async getMe(user) {
         return this.authService.getCurrentUser(user.userId, user.companyId);
     }
@@ -61,6 +64,17 @@ __decorate([
     __metadata("design:paramtypes", [login_dto_1.WxLoginDto]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "wxLogin", null);
+__decorate([
+    (0, common_1.Post)('wx-bind'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, swagger_1.ApiOperation)({ summary: '绑定微信（已登录用户用密码登录后绑定openid）' }),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, login_dto_1.WxLoginDto]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "wxBind", null);
 __decorate([
     (0, common_1.Get)('me'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

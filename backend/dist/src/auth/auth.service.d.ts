@@ -52,6 +52,10 @@ export declare class AuthService {
             customerId: number | null;
         };
     }>;
+    bindWechat(userId: number, code: string): Promise<{
+        success: boolean;
+        message: string;
+    }>;
     getCurrentUser(userId: number, companyId: number): Promise<{
         id: number;
         companyId: number;

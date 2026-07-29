@@ -199,6 +199,24 @@ let AuthService = class AuthService {
             },
         };
     }
+    async bindWechat(userId, code) {
+        const openid = await this.code2Session(code);
+        if (!openid) {
+            throw new common_1.UnauthorizedException('微信绑定失败: 无法获取 openid');
+        }
+        const existing = await this.prisma.sysUser.findFirst({
+            where: { wxOpenid: openid },
+        });
+        if (existing && Number(existing.id) !== userId) {
+            throw new common_1.BadRequestException('该微信号已绑定其他账号');
+        }
+        await this.prisma.sysUser.update({
+            where: { id: BigInt(userId) },
+            data: { wxOpenid: openid },
+        });
+        this.logger.log(`微信绑定成功: userId=${userId}, openid=${openid.substring(0, 8)}...`);
+        return { success: true, message: '微信绑定成功' };
+    }
     async getCurrentUser(userId, companyId) {
         const user = await this.prisma.sysUser.findUnique({
             where: { id: BigInt(userId) },

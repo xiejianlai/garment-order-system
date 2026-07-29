@@ -50,6 +50,10 @@ export declare class AuthController {
             customerId: number | null;
         };
     }>;
+    wxBind(user: JwtPayload, dto: WxLoginDto): Promise<{
+        success: boolean;
+        message: string;
+    }>;
     getMe(user: JwtPayload): Promise<{
         id: number;
         companyId: number;

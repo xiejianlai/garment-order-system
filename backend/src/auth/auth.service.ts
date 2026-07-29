@@ -199,6 +199,32 @@ export class AuthService {
   }
 
   /**
+   * 绑定微信 — 已登录用户，用 code 换 openid 并保存到用户记录
+   */
+  async bindWechat(userId: number, code: string) {
+    const openid = await this.code2Session(code);
+    if (!openid) {
+      throw new UnauthorizedException('微信绑定失败: 无法获取 openid');
+    }
+
+    // 检查该 openid 是否已被其他用户绑定
+    const existing = await this.prisma.sysUser.findFirst({
+      where: { wxOpenid: openid },
+    });
+    if (existing && Number(existing.id) !== userId) {
+      throw new BadRequestException('该微信号已绑定其他账号');
+    }
+
+    await this.prisma.sysUser.update({
+      where: { id: BigInt(userId) },
+      data: { wxOpenid: openid },
+    });
+
+    this.logger.log(`微信绑定成功: userId=${userId}, openid=${openid.substring(0, 8)}...`);
+    return { success: true, message: '微信绑定成功' };
+  }
+
+  /**
    * 获取当前用户信息
    */
   async getCurrentUser(userId: number, companyId: number) {

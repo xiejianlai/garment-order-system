@@ -9,7 +9,7 @@
 
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { loginWithPassword, loginWithWechat, getCurrentUser } from '../api/auth';
+import { loginWithPassword, loginWithWechat, bindWechat, getCurrentUser } from '../api/auth';
 import { setToken, setUserInfo, removeToken, removeUserInfo, getToken } from '../utils/auth';
 import type { UserInfo, UserRole } from '../types';
 import { ROLE_LABELS } from '../types';
@@ -34,10 +34,10 @@ export const useUserStore = defineStore('user', () => {
   const isCustomer = computed(() => role.value === 'customer');
 
   /**
-   * H5 登录 — 用户名密码
+   * 密码登录 — 公司代码 + 用户名 + 密码
    */
-  async function loginByPassword(username: string, password: string) {
-    const result = await loginWithPassword(username, password);
+  async function loginByPassword(companyCode: string, username: string, password: string) {
+    const result = await loginWithPassword(companyCode, username, password);
     setToken(result.token);
     setUserInfo(result.user);
     userInfo.value = result.user;
@@ -53,6 +53,13 @@ export const useUserStore = defineStore('user', () => {
     setUserInfo(result.user);
     userInfo.value = result.user;
     return result;
+  }
+
+  /**
+   * 绑定微信 — 已登录用户，用 code 绑定 openid
+   */
+  async function bindWxAccount(code: string) {
+    return await bindWechat(code);
   }
 
   /**
@@ -85,6 +92,7 @@ export const useUserStore = defineStore('user', () => {
     isCustomer,
     loginByPassword,
     loginByWechat,
+    bindWxAccount,
     fetchCurrentUser,
     logout,
   };
