@@ -22,6 +22,11 @@ export class ColorSizeItemDto {
   @IsOptional()
   rowColor?: string;
 
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  sortOrder?: number;
+
   @IsString()
   @IsOptional()
   sizeGroup?: string;

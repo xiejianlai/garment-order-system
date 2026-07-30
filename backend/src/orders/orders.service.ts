@@ -111,7 +111,7 @@ export class OrdersService {
           sizeGroup: item.sizeGroup || null,
           quantity: item.quantity,
           rowColor: item.rowColor || null,
-          sortOrder: index,
+          sortOrder: item.sortOrder ?? index,
         })),
       });
 

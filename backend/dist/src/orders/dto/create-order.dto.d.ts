@@ -4,6 +4,7 @@ export declare class ColorSizeItemDto {
     size: string;
     quantity: number;
     rowColor?: string;
+    sortOrder?: number;
     sizeGroup?: string;
 }
 export declare class CreateOrderDto {
