@@ -15,56 +15,59 @@
     <view class="card">
       <view class="card-title">订单基本信息</view>
 
-      <view class="form-item">
-        <text class="form-label required">订单号</text>
-        <input
-          v-model="form.orderNo"
-          class="form-input"
-          placeholder="如: PO-2026-001"
-          placeholder-class="placeholder"
-        />
+      <!-- 订单号 + 客户 → 一行 -->
+      <view class="form-row">
+        <view class="form-item half">
+          <text class="form-label required">订单号</text>
+          <input
+            v-model="form.orderNo"
+            class="form-input"
+            placeholder="如: PO-2026-001"
+            placeholder-class="placeholder"
+          />
+        </view>
+        <view class="form-item half">
+          <text class="form-label required">客户</text>
+          <input
+            v-model="form.customerName"
+            class="form-input"
+            placeholder="输入或选择客户"
+            placeholder-class="placeholder"
+          />
+        </view>
+      </view>
+      <scroll-view v-if="options.customers.length > 0" scroll-x class="chip-bar" show-scrollbar="false">
+        <text
+          v-for="c in options.customers"
+          :key="c.id"
+          class="chip"
+          @tap="form.customerName = c.name"
+        >{{ c.name }}</text>
+      </scroll-view>
+
+      <!-- 款号 + 款式名称 → 一行 -->
+      <view class="form-row">
+        <view class="form-item half">
+          <text class="form-label required">款号</text>
+          <input
+            v-model="form.styleNo"
+            class="form-input"
+            placeholder="如: TS-001"
+            placeholder-class="placeholder"
+          />
+        </view>
+        <view class="form-item half">
+          <text class="form-label">款式名称</text>
+          <input
+            v-model="form.styleName"
+            class="form-input"
+            placeholder="如: 男士连帽卫衣"
+            placeholder-class="placeholder"
+          />
+        </view>
       </view>
 
-      <!-- 客户：可填写可选择 -->
-      <view class="form-item">
-        <text class="form-label required">客户</text>
-        <input
-          v-model="form.customerName"
-          class="form-input"
-          placeholder="输入或选择客户名称"
-          placeholder-class="placeholder"
-        />
-        <scroll-view v-if="options.customers.length > 0" scroll-x class="chip-bar" show-scrollbar="false">
-          <text
-            v-for="c in options.customers"
-            :key="c.id"
-            class="chip"
-            @tap="form.customerName = c.name"
-          >{{ c.name }}</text>
-        </scroll-view>
-      </view>
-
-      <view class="form-item">
-        <text class="form-label required">款号</text>
-        <input
-          v-model="form.styleNo"
-          class="form-input"
-          placeholder="如: TS-001"
-          placeholder-class="placeholder"
-        />
-      </view>
-
-      <view class="form-item">
-        <text class="form-label">款式名称</text>
-        <input
-          v-model="form.styleName"
-          class="form-input"
-          placeholder="如: 男士连帽卫衣"
-          placeholder-class="placeholder"
-        />
-      </view>
-
-      <!-- 季节 + 品类：可填写可选择 -->
+      <!-- 季节 + 交期 → 一行 -->
       <view class="form-row">
         <view class="form-item half">
           <text class="form-label">季节</text>
@@ -84,41 +87,42 @@
           </view>
         </view>
         <view class="form-item half">
-          <text class="form-label">品类</text>
-          <input
-            v-model="form.category"
-            class="form-input"
-            placeholder="如: 卫衣"
-            placeholder-class="placeholder"
-          />
-          <view class="chip-bar-static">
-            <text
-              v-for="c in categoryOptions"
-              :key="c"
-              class="chip-sm"
-              @tap="form.category = c"
-            >{{ c }}</text>
-          </view>
+          <text class="form-label required">交期</text>
+          <picker
+            mode="date"
+            :value="form.deliveryDate"
+            @change="onDateChange"
+          >
+            <view class="form-picker">
+              <text :class="{ 'placeholder': !form.deliveryDate }">
+                {{ form.deliveryDate || '请选择交期' }}
+              </text>
+              <text class="picker-arrow">></text>
+            </view>
+          </picker>
         </view>
       </view>
 
+      <!-- 品类 → 单独一行 -->
       <view class="form-item">
-        <text class="form-label required">交期</text>
-        <picker
-          mode="date"
-          :value="form.deliveryDate"
-          @change="onDateChange"
-        >
-          <view class="form-picker">
-            <text :class="{ 'placeholder': !form.deliveryDate }">
-              {{ form.deliveryDate || '请选择交期' }}
-            </text>
-            <text class="picker-arrow">></text>
-          </view>
-        </picker>
+        <text class="form-label">品类</text>
+        <input
+          v-model="form.category"
+          class="form-input"
+          placeholder="如: 卫衣"
+          placeholder-class="placeholder"
+        />
+        <view class="chip-bar-static">
+          <text
+            v-for="c in categoryOptions"
+            :key="c"
+            class="chip-sm"
+            @tap="form.category = c"
+          >{{ c }}</text>
+        </view>
       </view>
 
-      <!-- 工厂：可填写可选择 -->
+      <!-- 工厂 → 单独一行 -->
       <view class="form-item">
         <text class="form-label">分配工厂</text>
         <input
@@ -137,7 +141,7 @@
         </scroll-view>
       </view>
 
-      <!-- 理单 + 跟单：可填写可选择 -->
+      <!-- 理单 + 跟单 → 一行 -->
       <view class="form-row">
         <view class="form-item half">
           <text class="form-label">理单</text>
@@ -154,7 +158,6 @@
               class="chip-sm"
               @tap="form.coordinatorName = c.name"
             >{{ c.name }}</text>
-            <text v-if="options.coordinators.length === 0" class="chip-sm chip-empty">暂无已注册理单，可直接输入名字</text>
           </view>
         </view>
         <view class="form-item half">
@@ -172,7 +175,6 @@
               class="chip-sm"
               @tap="form.merchandiserName = m.name"
             >{{ m.name }}</text>
-            <text v-if="options.merchandisers.length === 0" class="chip-sm chip-empty">暂无已注册跟单，可直接输入名字</text>
           </view>
         </view>
       </view>
@@ -214,21 +216,22 @@
         <view class="form-item">
           <text class="form-label">颜色</text>
           <view class="tag-input-area">
-            <view class="tag-list">
+            <view v-if="colors.length > 0" class="tag-list">
               <view v-for="(color, idx) in colors" :key="idx" class="input-tag">
                 <text>{{ color }}</text>
-                <text class="tag-remove" @tap="removeColor(idx)">x</text>
+                <view class="tag-remove" @tap="removeColor(idx)"><text>x</text></view>
               </view>
             </view>
             <view class="tag-add-row">
               <input
-                v-model="newColor"
+                :value="newColor"
                 class="tag-input"
                 placeholder="输入颜色名称"
                 placeholder-class="placeholder"
+                @input="onColorInput"
                 @confirm="addColor"
               />
-              <text class="add-btn" @tap="addColor">添加</text>
+              <view class="add-btn" @tap="addColor"><text class="add-btn-text">添加</text></view>
             </view>
           </view>
         </view>
@@ -236,21 +239,22 @@
         <view class="form-item">
           <text class="form-label">尺码</text>
           <view class="tag-input-area">
-            <view class="tag-list">
+            <view v-if="sizes.length > 0" class="tag-list">
               <view v-for="(size, idx) in sizes" :key="idx" class="input-tag">
                 <text>{{ size }}</text>
-                <text class="tag-remove" @tap="removeSize(idx)">x</text>
+                <view class="tag-remove" @tap="removeSize(idx)"><text>x</text></view>
               </view>
             </view>
             <view class="tag-add-row">
               <input
-                v-model="newSize"
+                :value="newSize"
                 class="tag-input"
                 placeholder="输入尺码名称"
                 placeholder-class="placeholder"
+                @input="onSizeInput"
                 @confirm="addSize"
               />
-              <text class="add-btn" @tap="addSize">添加</text>
+              <view class="add-btn" @tap="addSize"><text class="add-btn-text">添加</text></view>
             </view>
           </view>
         </view>
@@ -293,8 +297,8 @@
 
       <!-- 快捷操作 -->
       <view v-if="colors.length > 0 && sizes.length > 0" class="quick-actions">
-        <text class="quick-btn" @tap="fillAllEqual">均分数量</text>
-        <text class="quick-btn" @tap="clearMatrix">清空矩阵</text>
+        <view class="quick-btn" @tap="fillAllEqual"><text>均分数量</text></view>
+        <view class="quick-btn" @tap="clearMatrix"><text>清空矩阵</text></view>
       </view>
     </view>
 
@@ -391,12 +395,27 @@ function getSizeTotal(size: string): number {
   return colors.value.reduce((sum, color) => sum + (matrixData.value[`${color}|${size}`] || 0), 0);
 }
 
+/** 颜色输入 — 用 @input 替代 v-model，确保小程序端可靠 */
+function onColorInput(e: any) {
+  newColor.value = e.detail.value;
+}
+/** 尺码输入 */
+function onSizeInput(e: any) {
+  newSize.value = e.detail.value;
+}
+
 /** 颜色/尺码管理 */
 function addColor() {
   const val = newColor.value.trim();
-  if (val && !colors.value.includes(val)) {
-    colors.value.push(val);
+  if (!val) {
+    uni.showToast({ title: '请输入颜色名称', icon: 'none' });
+    return;
   }
+  if (colors.value.includes(val)) {
+    uni.showToast({ title: '该颜色已存在', icon: 'none' });
+    return;
+  }
+  colors.value.push(val);
   newColor.value = '';
 }
 function removeColor(idx: number) {
@@ -408,9 +427,15 @@ function removeColor(idx: number) {
 }
 function addSize() {
   const val = newSize.value.trim();
-  if (val && !sizes.value.includes(val)) {
-    sizes.value.push(val);
+  if (!val) {
+    uni.showToast({ title: '请输入尺码名称', icon: 'none' });
+    return;
   }
+  if (sizes.value.includes(val)) {
+    uni.showToast({ title: '该尺码已存在', icon: 'none' });
+    return;
+  }
+  sizes.value.push(val);
   newSize.value = '';
 }
 function removeSize(idx: number) {
@@ -672,10 +697,6 @@ function handleCancel() {
   border-radius: 6rpx;
   font-size: 22rpx;
 }
-.chip-empty {
-  font-style: italic;
-  opacity: 0.6;
-}
 
 /* 图片上传 */
 .image-upload-area {
@@ -753,13 +774,19 @@ function handleCancel() {
   font-size: 24rpx;
 }
 .tag-remove {
-  color: #185FA5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32rpx;
+  height: 32rpx;
+  border-radius: 50%;
+  background: rgba(24,95,165,0.15);
   font-size: 22rpx;
-  opacity: 0.7;
 }
 .tag-add-row {
   display: flex;
   gap: 12rpx;
+  align-items: center;
 }
 .tag-input {
   flex: 1;
@@ -771,14 +798,17 @@ function handleCancel() {
   font-size: 26rpx;
 }
 .add-btn {
-  padding: 0 24rpx;
+  padding: 0 28rpx;
   height: 64rpx;
-  line-height: 64rpx;
   background: #185FA5;
-  color: #fff;
   border-radius: 8rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.add-btn-text {
+  color: #fff;
   font-size: 26rpx;
-  text-align: center;
 }
 
 /* 矩阵表格 — 严格对齐 */
@@ -810,7 +840,6 @@ function handleCancel() {
 .matrix-cell:last-child {
   border-right: none;
 }
-/* 颜色列和小计列固定宽度比例 */
 .matrix-corner {
   font-weight: 600;
   color: #5F5E5A;
@@ -824,7 +853,6 @@ function handleCancel() {
   flex: 1.5;
   min-width: 120rpx;
 }
-/* 尺码列与输入列保持一致 */
 .matrix-size-header {
   font-weight: 600;
   color: #5F5E5A;
@@ -887,6 +915,9 @@ function handleCancel() {
   color: #5F5E5A;
   border-radius: 8rpx;
   font-size: 24rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* 提交 */
