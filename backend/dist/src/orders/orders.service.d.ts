@@ -18,12 +18,23 @@ export declare class OrdersService {
         totalQty: any;
         deliveryDate: any;
         factoryName: any;
+        factoryId: number | null;
         coordinatorId: number | null;
         coordinatorName: any;
         merchandiserId: number | null;
         merchandiserName: any;
         orderStatus: any;
         createdAt: any;
+        customer: {
+            id: number;
+            customerName: any;
+            customerCode: any;
+        } | null;
+        assignedFactory: {
+            id: number;
+            factoryName: any;
+            factoryCode: any;
+        } | null;
     }>;
     getOrderList(user: JwtPayload, status?: string, page?: number, limit?: number): Promise<{
         list: {
@@ -39,12 +50,23 @@ export declare class OrdersService {
             totalQty: any;
             deliveryDate: any;
             factoryName: any;
+            factoryId: number | null;
             coordinatorId: number | null;
             coordinatorName: any;
             merchandiserId: number | null;
             merchandiserName: any;
             orderStatus: any;
             createdAt: any;
+            customer: {
+                id: number;
+                customerName: any;
+                customerCode: any;
+            } | null;
+            assignedFactory: {
+                id: number;
+                factoryName: any;
+                factoryCode: any;
+            } | null;
         }[];
         total: number;
         page: number;
@@ -52,13 +74,36 @@ export declare class OrdersService {
     }>;
     getOrderDetail(orderId: number, user: JwtPayload): Promise<{
         garmentImageUrl: any;
+        remark: any;
+        createdBy: number | null;
         coordinatorRegistered: boolean;
         merchandiserRegistered: boolean;
+        merchandiser: {
+            id: number;
+            realName: any;
+            username: any;
+        } | null;
+        coordinator: {
+            id: number;
+            realName: any;
+            username: any;
+        } | null;
         colorSizes: any;
         fabrics: any;
         trims: any;
         taStages: any;
         logs: any;
+        files: any;
+        trimsSummary: {
+            ready: any;
+            total: any;
+            allReady: any;
+        };
+        taSummary: {
+            completed: any;
+            total: any;
+            delayed: any;
+        };
         id: number;
         companyId: number;
         orderNo: any;
@@ -71,12 +116,23 @@ export declare class OrdersService {
         totalQty: any;
         deliveryDate: any;
         factoryName: any;
+        factoryId: number | null;
         coordinatorId: number | null;
         coordinatorName: any;
         merchandiserId: number | null;
         merchandiserName: any;
         orderStatus: any;
         createdAt: any;
+        customer: {
+            id: number;
+            customerName: any;
+            customerCode: any;
+        } | null;
+        assignedFactory: {
+            id: number;
+            factoryName: any;
+            factoryCode: any;
+        } | null;
     }>;
     updateOrder(orderId: number, dto: UpdateOrderDto, user: JwtPayload): Promise<{
         updated: boolean;

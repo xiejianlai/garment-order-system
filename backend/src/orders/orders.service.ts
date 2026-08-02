@@ -179,6 +179,7 @@ export class OrdersService {
         where,
         include: {
           customer: true,
+          factory: true,
           colorSizes: true,
         },
         orderBy: { createdAt: 'desc' },
@@ -473,12 +474,24 @@ export class OrdersService {
       totalQty: order.totalQty,
       deliveryDate: order.deliveryDate?.toISOString().split('T')[0],
       factoryName: order.factoryName,
+      factoryId: order.factoryId ? Number(order.factoryId) : null,
       coordinatorId: order.coordinatorId ? Number(order.coordinatorId) : null,
       coordinatorName: order.coordinatorName,
       merchandiserId: order.merchandiserId ? Number(order.merchandiserId) : null,
       merchandiserName: order.merchandiserName,
       orderStatus: order.orderStatus,
       createdAt: order.createdAt?.toISOString(),
+      // 关联对象 — 前端通过 order.customer?.customerName / order.assignedFactory?.factoryName 访问
+      customer: order.customer ? {
+        id: Number(order.customer.id),
+        customerName: order.customer.customerName,
+        customerCode: order.customer.customerCode,
+      } : null,
+      assignedFactory: order.factory ? {
+        id: Number(order.factory.id),
+        factoryName: order.factory.factoryName,
+        factoryCode: order.factory.factoryCode,
+      } : null,
     };
   }
 
@@ -486,18 +499,49 @@ export class OrdersService {
     const isCoordRegistered = order.coordinatorId && order.coordinator;
     const isMerRegistered = order.merchandiserId && order.merchandiser;
 
+    // 计算辅料齐套汇总
+    const trims = order.trims || [];
+    const trimsSummary = {
+      ready: trims.filter((t: any) => t.isReady === 1).length,
+      total: trims.length,
+      allReady: trims.length > 0 && trims.every((t: any) => t.isReady === 1),
+    };
+
+    // 计算 T&A 进度汇总
+    const taStages = order.taStages || [];
+    const taSummary = {
+      completed: taStages.filter((s: any) => s.status === 'completed').length,
+      total: taStages.length,
+      delayed: taStages.filter((s: any) => s.status === 'delayed').length,
+    };
+
     return {
       ...this.serializeOrder(order),
       garmentImageUrl: order.garmentImageUrl,
+      remark: order.remark,
+      createdBy: order.createdBy ? Number(order.createdBy) : null,
       coordinatorRegistered: !!isCoordRegistered,
       merchandiserRegistered: !!isMerRegistered,
+      // 关联用户对象 — 前端通过 order.merchandiser.realName 访问
+      merchandiser: order.merchandiser ? {
+        id: Number(order.merchandiser.id),
+        realName: order.merchandiser.realName,
+        username: order.merchandiser.username,
+      } : null,
+      coordinator: order.coordinator ? {
+        id: Number(order.coordinator.id),
+        realName: order.coordinator.realName,
+        username: order.coordinator.username,
+      } : null,
       colorSizes: order.colorSizes?.map(cs => ({
         id: Number(cs.id),
         color: cs.color,
         colorCode: cs.colorCode,
         size: cs.size,
+        sizeGroup: cs.sizeGroup,
         quantity: cs.quantity,
         rowColor: cs.rowColor,
+        sortOrder: cs.sortOrder,
       })) || [],
       fabrics: order.fabrics?.map(f => ({
         id: Number(f.id),
@@ -512,33 +556,48 @@ export class OrdersService {
         plannedDate: f.plannedDate?.toISOString().split('T')[0],
         actualDate: f.actualDate?.toISOString().split('T')[0],
       })) || [],
-      trims: order.trims?.map(t => ({
+      trims: trims.map((t: any) => ({
         id: Number(t.id),
         trimName: t.trimName,
         trimCategory: t.trimCategory,
         color: t.color,
         specification: t.specification,
         usagePerPiece: Number(t.usagePerPiece),
+        unit: t.unit,
         totalDemand: t.totalDemand,
         supplierName: t.supplierName,
         samplingStatus: t.samplingStatus,
+        samplingSentDate: t.samplingSentDate?.toISOString().split('T')[0],
+        samplingApprovedDate: t.samplingApprovedDate?.toISOString().split('T')[0],
+        samplingRemark: t.samplingRemark,
+        bulkPoNo: t.bulkPoNo,
         bulkPoStatus: t.bulkPoStatus,
+        bulkPoDate: t.bulkPoDate?.toISOString().split('T')[0],
+        bulkEtd: t.bulkEtd?.toISOString().split('T')[0],
+        bulkEta: t.bulkEta?.toISOString().split('T')[0],
+        receivedQty: t.receivedQty,
         qtyCheckStatus: t.qtyCheckStatus,
         inspectionResult: t.inspectionResult,
+        inspectionNote: t.inspectionNote,
         isReady: t.isReady,
-        plannedDate: t.plannedDate?.toISOString().split('T')[0],
-        actualDate: t.actualDate?.toISOString().split('T')[0],
+        readyDate: t.readyDate?.toISOString().split('T')[0],
+        supplier: t.supplier ? {
+          id: Number(t.supplier.id),
+          factoryName: t.supplier.factoryName,
+        } : null,
       })) || [],
-      taStages: order.taStages?.map(ts => ({
-        id: Number(ts.id),
-        stageCategory: ts.stageCategory,
-        stageCode: ts.stageCode,
-        stageName: ts.stageName,
-        status: ts.status,
-        plannedDate: ts.plannedDate?.toISOString().split('T')[0],
-        startDate: ts.startDate?.toISOString().split('T')[0],
-        actualDate: ts.actualDate?.toISOString().split('T')[0],
-        completionPct: ts.completionPct,
+      taStages: taStages.map((s: any) => ({
+        id: Number(s.id),
+        stageCategory: s.stageCategory,
+        stageCode: s.stageCode,
+        stageName: s.stageName,
+        status: s.status,
+        plannedDate: s.plannedDate?.toISOString().split('T')[0],
+        startDate: s.startDate?.toISOString().split('T')[0],
+        actualDate: s.actualDate?.toISOString().split('T')[0],
+        completionPct: s.completionPct,
+        remark: s.remark,
+        sortOrder: s.sortOrder,
       })) || [],
       logs: order.logs?.map(log => ({
         id: Number(log.id),
@@ -549,6 +608,14 @@ export class OrdersService {
         changeSummary: log.changeSummary,
         createdAt: log.createdAt.toISOString(),
       })) || [],
+      files: order.files?.map(f => ({
+        id: Number(f.id),
+        fileName: f.fileName,
+        fileUrl: f.fileUrl,
+        fileType: f.fileType,
+      })) || [],
+      trimsSummary,
+      taSummary,
     };
   }
 }

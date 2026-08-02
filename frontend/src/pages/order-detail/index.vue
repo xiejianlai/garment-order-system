@@ -43,13 +43,13 @@
 
         <!-- 辅料齐套 & T&A 进度速览 -->
         <view class="summary-badges">
-          <view class="badge" :class="order.trimsSummary.allReady ? 'badge-green' : 'badge-amber'">
-            <text>辅料齐套 {{ order.trimsSummary.ready }}/{{ order.trimsSummary.total }}</text>
+          <view class="badge" :class="(order.trimsSummary?.allReady) ? 'badge-green' : 'badge-amber'">
+            <text>辅料齐套 {{ order.trimsSummary?.ready || 0 }}/{{ order.trimsSummary?.total || 0 }}</text>
           </view>
-          <view class="badge" :class="order.taSummary.delayed > 0 ? 'badge-red' : 'badge-blue'">
-            <text>T&A进度 {{ order.taSummary.completed }}/{{ order.taSummary.total }}</text>
+          <view class="badge" :class="(order.taSummary?.delayed || 0) > 0 ? 'badge-red' : 'badge-blue'">
+            <text>T&A进度 {{ order.taSummary?.completed || 0 }}/{{ order.taSummary?.total || 0 }}</text>
           </view>
-          <view v-if="order.taSummary.delayed > 0" class="badge badge-red">
+          <view v-if="(order.taSummary?.delayed || 0) > 0" class="badge badge-red">
             <text>延误 {{ order.taSummary.delayed }}项</text>
           </view>
         </view>
@@ -120,50 +120,54 @@
             </view>
           </view>
 
-          <!-- 颜色尺码矩阵 -->
+          <!-- 颜色尺码矩阵 — 横向可滚动 -->
           <view class="card">
             <view class="card-title">颜色尺码矩阵</view>
-            <view class="matrix-table">
-              <!-- 表头: 空格 + 尺码列 -->
-              <view class="matrix-row matrix-header">
-                <view class="matrix-cell matrix-color-header">颜色\尺码</view>
-                <view
-                  v-for="size in uniqueSizes"
-                  :key="size"
-                  class="matrix-cell matrix-size-header"
-                >
-                  {{ size }}
+            <view class="matrix-wrapper">
+              <scroll-view scroll-x class="matrix-scroll" show-scrollbar="false">
+                <view class="matrix-table">
+                  <!-- 表头: 空格 + 尺码列 -->
+                  <view class="matrix-row matrix-header">
+                    <view class="matrix-cell matrix-color-header">颜色\尺码</view>
+                    <view
+                      v-for="size in uniqueSizes"
+                      :key="size"
+                      class="matrix-cell matrix-size-header"
+                    >
+                      {{ size }}
+                    </view>
+                    <view class="matrix-cell matrix-total-header">小计</view>
+                  </view>
+                  <!-- 数据行: 每个颜色一行 -->
+                  <view
+                    v-for="color in uniqueColors"
+                    :key="color"
+                    class="matrix-row"
+                  >
+                    <view class="matrix-cell matrix-color-cell">{{ color }}</view>
+                    <view
+                      v-for="size in uniqueSizes"
+                      :key="size"
+                      class="matrix-cell matrix-qty-cell"
+                    >
+                      {{ getMatrixQty(color, size) || '-' }}
+                    </view>
+                    <view class="matrix-cell matrix-total-cell">{{ getColorTotal(color) }}</view>
+                  </view>
+                  <!-- 合计行 -->
+                  <view class="matrix-row matrix-footer">
+                    <view class="matrix-cell matrix-color-cell">合计</view>
+                    <view
+                      v-for="size in uniqueSizes"
+                      :key="size"
+                      class="matrix-cell matrix-size-total"
+                    >
+                      {{ getSizeTotal(size) }}
+                    </view>
+                    <view class="matrix-cell matrix-grand-total">{{ order.totalQty }}</view>
+                  </view>
                 </view>
-                <view class="matrix-cell matrix-total-header">小计</view>
-              </view>
-              <!-- 数据行: 每个颜色一行 -->
-              <view
-                v-for="color in uniqueColors"
-                :key="color"
-                class="matrix-row"
-              >
-                <view class="matrix-cell matrix-color-cell">{{ color }}</view>
-                <view
-                  v-for="size in uniqueSizes"
-                  :key="size"
-                  class="matrix-cell"
-                >
-                  {{ getMatrixQty(color, size) || '-' }}
-                </view>
-                <view class="matrix-cell matrix-total-cell">{{ getColorTotal(color) }}</view>
-              </view>
-              <!-- 合计行 -->
-              <view class="matrix-row matrix-footer">
-                <view class="matrix-cell matrix-color-cell">合计</view>
-                <view
-                  v-for="size in uniqueSizes"
-                  :key="size"
-                  class="matrix-cell"
-                >
-                  {{ getSizeTotal(size) }}
-                </view>
-                <view class="matrix-cell matrix-total-cell">{{ order.totalQty }}</view>
-              </view>
+              </scroll-view>
             </view>
           </view>
         </view>
@@ -180,9 +184,9 @@
                 @tap="goTrimManage"
               >管理辅料</text>
             </view>
-            <view class="trims-ready-banner" :class="order.trimsSummary.allReady ? 'banner-green' : 'banner-amber'">
+            <view class="trims-ready-banner" :class="(order.trimsSummary?.allReady) ? 'banner-green' : 'banner-amber'">
               <text class="banner-text">
-                {{ order.trimsSummary.allReady ? '✓ 全部辅料已齐套' : `辅料齐套中 ${order.trimsSummary.ready}/${order.trimsSummary.total}` }}
+                {{ order.trimsSummary?.allReady ? '✓ 全部辅料已齐套' : `辅料齐套中 ${order.trimsSummary?.ready || 0}/${order.trimsSummary?.total || 0}` }}
               </text>
               <text
                 v-if="userStore.isAdmin"
@@ -642,12 +646,14 @@ onUnmounted(() => {
 .info-label { color: #888780; min-width: 140rpx; }
 .info-value { color: #333333; flex: 1; }
 
-/* 颜色尺码矩阵 */
-.matrix-table { border: 1rpx solid #e0e0e0; border-radius: 8rpx; overflow: hidden; }
+/* 颜色尺码矩阵 — 横向滚动 */
+.matrix-wrapper { border: 1rpx solid #e0e0e0; border-radius: 8rpx; overflow: hidden; }
+.matrix-scroll { width: 100%; white-space: nowrap; }
+.matrix-table { display: inline-block; min-width: 100%; }
 .matrix-row { display: flex; border-bottom: 1rpx solid #f0f0f0; }
 .matrix-row:last-child { border-bottom: none; }
 .matrix-cell {
-  flex: 1;
+  flex-shrink: 0;
   text-align: center;
   padding: 16rpx 8rpx;
   font-size: 24rpx;
@@ -656,16 +662,20 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
 }
 .matrix-cell:last-child { border-right: none; }
 .matrix-header { background: #F1EFE8; }
-.matrix-color-header { font-weight: 600; color: #5F5E5A; min-width: 120rpx; flex: 1.2; }
-.matrix-size-header { font-weight: 600; color: #5F5E5A; }
-.matrix-total-header { font-weight: 600; color: #5F5E5A; background: #E1F5EE; }
-.matrix-color-cell { font-weight: 500; color: #2C2C2A; min-width: 120rpx; flex: 1.2; }
-.matrix-total-cell { background: #E1F5EE; font-weight: 600; color: #0F6E56; }
+.matrix-color-header { font-weight: 600; color: #5F5E5A; width: 140rpx; min-width: 140rpx; }
+.matrix-size-header { font-weight: 600; color: #5F5E5A; width: 100rpx; min-width: 100rpx; }
+.matrix-qty-cell { color: #333333; width: 100rpx; min-width: 100rpx; }
+.matrix-total-header { font-weight: 600; color: #5F5E5A; background: #E1F5EE; width: 110rpx; min-width: 110rpx; }
+.matrix-color-cell { font-weight: 500; color: #2C2C2A; width: 140rpx; min-width: 140rpx; }
+.matrix-total-cell { background: #E1F5EE; font-weight: 600; color: #0F6E56; width: 110rpx; min-width: 110rpx; }
 .matrix-footer { background: #F1EFE8; }
 .matrix-footer .matrix-cell { font-weight: 600; }
+.matrix-size-total { color: #5F5E5A; }
+.matrix-grand-total { background: #E1F5EE; font-weight: 700; color: #0F6E56; font-size: 28rpx; width: 110rpx; min-width: 110rpx; }
 
 /* 辅料 */
 .trim-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12rpx; }

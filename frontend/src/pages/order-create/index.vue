@@ -260,39 +260,43 @@
         </view>
       </view>
 
-      <!-- 矩阵表格 -->
-      <view v-if="colors.length > 0 && sizes.length > 0" class="matrix-table">
-        <!-- 表头 -->
-        <view class="matrix-row matrix-header">
-          <view class="matrix-cell matrix-corner">颜色\尺码</view>
-          <view v-for="size in sizes" :key="size" class="matrix-cell matrix-size-header">
-            {{ size }}
+      <!-- 矩阵表格 — 横向可滚动，支持20+尺码 -->
+      <view v-if="colors.length > 0 && sizes.length > 0" class="matrix-wrapper">
+        <scroll-view scroll-x class="matrix-scroll" show-scrollbar="false">
+          <view class="matrix-table">
+            <!-- 表头 -->
+            <view class="matrix-row matrix-header">
+              <view class="matrix-cell matrix-corner">颜色\尺码</view>
+              <view v-for="size in sizes" :key="size" class="matrix-cell matrix-size-header">
+                {{ size }}
+              </view>
+              <view class="matrix-cell matrix-total-header">小计</view>
+            </view>
+            <!-- 数据行 -->
+            <view v-for="color in colors" :key="color" class="matrix-row">
+              <view class="matrix-cell matrix-color-cell">{{ color }}</view>
+              <view v-for="size in sizes" :key="size" class="matrix-cell matrix-input-cell">
+                <input
+                  :value="getMatrixValue(color, size)"
+                  class="matrix-input"
+                  type="number"
+                  placeholder="0"
+                  placeholder-class="placeholder"
+                  @input="onMatrixInput(color, size, $event)"
+                />
+              </view>
+              <view class="matrix-cell matrix-total-cell">{{ getColorTotal(color) }}</view>
+            </view>
+            <!-- 合计行 -->
+            <view class="matrix-row matrix-footer">
+              <view class="matrix-cell matrix-color-cell">合计</view>
+              <view v-for="size in sizes" :key="size" class="matrix-cell matrix-size-total">
+                {{ getSizeTotal(size) }}
+              </view>
+              <view class="matrix-cell matrix-grand-total">{{ totalQty }}</view>
+            </view>
           </view>
-          <view class="matrix-cell matrix-total-header">小计</view>
-        </view>
-        <!-- 数据行 -->
-        <view v-for="color in colors" :key="color" class="matrix-row">
-          <view class="matrix-cell matrix-color-cell">{{ color }}</view>
-          <view v-for="size in sizes" :key="size" class="matrix-cell matrix-input-cell">
-            <input
-              :value="getMatrixValue(color, size)"
-              class="matrix-input"
-              type="number"
-              placeholder="0"
-              placeholder-class="placeholder"
-              @input="onMatrixInput(color, size, $event)"
-            />
-          </view>
-          <view class="matrix-cell matrix-total-cell">{{ getColorTotal(color) }}</view>
-        </view>
-        <!-- 合计行 -->
-        <view class="matrix-row matrix-footer">
-          <view class="matrix-cell matrix-color-cell">合计</view>
-          <view v-for="size in sizes" :key="size" class="matrix-cell matrix-size-total">
-            {{ getSizeTotal(size) }}
-          </view>
-          <view class="matrix-cell matrix-grand-total">{{ totalQty }}</view>
-        </view>
+        </scroll-view>
       </view>
 
       <!-- 快捷操作 -->
@@ -811,12 +815,21 @@ function handleCancel() {
   font-size: 26rpx;
 }
 
-/* 矩阵表格 — 严格对齐 */
-.matrix-table {
-  border: 1rpx solid #E0E0E0;
+/* 矩阵表格 — 横向滚动 */
+.matrix-wrapper {
+  margin-top: 12rpx;
   border-radius: 8rpx;
   overflow: hidden;
-  margin-top: 12rpx;
+}
+.matrix-scroll {
+  width: 100%;
+  white-space: nowrap;
+}
+.matrix-table {
+  display: inline-block;
+  min-width: 100%;
+  border: 1rpx solid #E0E0E0;
+  border-radius: 8rpx;
 }
 .matrix-row {
   display: flex;
@@ -826,7 +839,7 @@ function handleCancel() {
   border-bottom: none;
 }
 .matrix-cell {
-  flex: 1;
+  flex-shrink: 0;
   text-align: center;
   padding: 12rpx 2rpx;
   font-size: 24rpx;
@@ -843,38 +856,40 @@ function handleCancel() {
 .matrix-corner {
   font-weight: 600;
   color: #5F5E5A;
-  flex: 1.5;
-  min-width: 120rpx;
+  width: 140rpx;
+  min-width: 140rpx;
   font-size: 22rpx;
 }
 .matrix-color-cell {
   font-weight: 500;
   color: #2C2C2A;
-  flex: 1.5;
-  min-width: 120rpx;
+  width: 140rpx;
+  min-width: 140rpx;
 }
 .matrix-size-header {
   font-weight: 600;
   color: #5F5E5A;
-  min-width: 90rpx;
+  width: 100rpx;
+  min-width: 100rpx;
 }
 .matrix-input-cell {
-  min-width: 90rpx;
+  width: 100rpx;
+  min-width: 100rpx;
   padding: 4rpx 2rpx;
 }
 .matrix-total-header {
   font-weight: 600;
   color: #0F6E56;
   background: #E1F5EE;
-  flex: 1.2;
-  min-width: 100rpx;
+  width: 110rpx;
+  min-width: 110rpx;
 }
 .matrix-total-cell {
   background: #F0FBF7;
   font-weight: 600;
   color: #0F6E56;
-  flex: 1.2;
-  min-width: 100rpx;
+  width: 110rpx;
+  min-width: 110rpx;
 }
 .matrix-footer {
   background: #F1EFE8;
@@ -890,8 +905,8 @@ function handleCancel() {
   color: #0F6E56;
   font-weight: 700;
   font-size: 28rpx;
-  flex: 1.2;
-  min-width: 100rpx;
+  width: 110rpx;
+  min-width: 110rpx;
 }
 .matrix-input {
   width: 100%;
