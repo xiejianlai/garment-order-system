@@ -561,6 +561,8 @@ async function handleSubmit() {
 
     await createOrder(payload);
     uni.showToast({ title: '订单创建成功', icon: 'success' });
+    // 通知列表页刷新（比单纯依赖 onShow 更可靠）
+    uni.$emit('orderCreated');
     setTimeout(() => {
       uni.navigateBack();
     }, 1500);
@@ -899,6 +901,8 @@ function handleCancel() {
 }
 .matrix-size-total {
   color: #5F5E5A;
+  width: 100rpx;
+  min-width: 100rpx;
 }
 .matrix-grand-total {
   background: #E1F5EE;

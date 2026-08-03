@@ -9,7 +9,7 @@ export interface OrderListResult {
   list: OrderListItem[];
   total: number;
   page: number;
-  pageSize: number;
+  limit: number;
 }
 
 export interface CreateOrderPayload {
@@ -29,7 +29,7 @@ export interface CreateOrderPayload {
 }
 
 /** 获取订单列表 */
-export function getOrders(params?: { page?: number; pageSize?: number; status?: string }) {
+export function getOrders(params?: { page?: number; limit?: number; status?: string }) {
   return http.get<OrderListResult>('/orders', { data: params });
 }
 

@@ -106,7 +106,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 import { onShow, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
 import { useUserStore } from '../../stores/user';
 import { getOrders } from '../../api/orders';
@@ -119,7 +119,7 @@ const loading = ref(false);
 const refreshing = ref(false);
 const noMore = ref(false);
 const currentPage = ref(1);
-const pageSize = 20;
+const pageLimit = 20;
 const currentStatus = ref<string>('');
 
 const statusTabs = [
@@ -143,7 +143,7 @@ async function loadOrders(reset = false) {
   try {
     const result = await getOrders({
       page: currentPage.value,
-      pageSize,
+      limit: pageLimit,
       status: currentStatus.value || undefined,
     });
     if (reset) {
@@ -151,7 +151,7 @@ async function loadOrders(reset = false) {
     } else {
       orders.value.push(...result.list);
     }
-    if (result.list.length < pageSize) {
+    if (result.list.length < pageLimit) {
       noMore.value = true;
     }
   } catch (err: any) {
@@ -231,9 +231,22 @@ function getStatusTagClass(status: OrderStatus): string {
   return map[status] || 'tag-gray';
 }
 
+/** 从创建页返回时强制刷新（事件机制，比 onShow 更可靠） */
+function onOrderCreated() {
+  loadOrders(true);
+}
+
 onShow(() => {
   // 页面显示时刷新列表（从详情页返回时也能看到最新状态）
   loadOrders(true);
+});
+
+onMounted(() => {
+  uni.$on('orderCreated', onOrderCreated);
+});
+
+onUnmounted(() => {
+  uni.$off('orderCreated', onOrderCreated);
 });
 </script>
 

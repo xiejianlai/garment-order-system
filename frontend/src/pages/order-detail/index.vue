@@ -674,7 +674,7 @@ onUnmounted(() => {
 .matrix-total-cell { background: #E1F5EE; font-weight: 600; color: #0F6E56; width: 110rpx; min-width: 110rpx; }
 .matrix-footer { background: #F1EFE8; }
 .matrix-footer .matrix-cell { font-weight: 600; }
-.matrix-size-total { color: #5F5E5A; }
+.matrix-size-total { color: #5F5E5A; width: 100rpx; min-width: 100rpx; }
 .matrix-grand-total { background: #E1F5EE; font-weight: 700; color: #0F6E56; font-size: 28rpx; width: 110rpx; min-width: 110rpx; }
 
 /* 辅料 */
