@@ -3,14 +3,9 @@
 
   包含 4 个 Tab:
   1. 基础信息: 订单信息 + 颜色尺码矩阵
-  2. 辅料进度: 辅料清单 + 齐套状态
-  3. T&A进度: 13个阶段状态
+  2. 物料进度: 物料清单 + 面料信息 + 齐套状态
+  3. T&A进度: 13个阶段状态（支持计划/实际时间填写）
   4. 操作日志: 变更日志流
-
-  权限控制:
-  - admin/merchandiser: 可看到所有 Tab
-  - factory: 可看基础信息、T&A(可更新大货节点)、辅料(只读)
-  - customer: 可看基础信息、T&A(只读)
 -->
 <template>
   <view class="detail-page">
@@ -41,10 +36,10 @@
           </text>
         </view>
 
-        <!-- 辅料齐套 & T&A 进度速览 -->
+        <!-- 物料齐套 & T&A 进度速览 -->
         <view class="summary-badges">
           <view class="badge" :class="(order.trimsSummary?.allReady) ? 'badge-green' : 'badge-amber'">
-            <text>辅料齐套 {{ order.trimsSummary?.ready || 0 }}/{{ order.trimsSummary?.total || 0 }}</text>
+            <text>物料齐套 {{ order.trimsSummary?.ready || 0 }}/{{ order.trimsSummary?.total || 0 }}</text>
           </view>
           <view class="badge" :class="(order.taSummary?.delayed || 0) > 0 ? 'badge-red' : 'badge-blue'">
             <text>T&A进度 {{ order.taSummary?.completed || 0 }}/{{ order.taSummary?.total || 0 }}</text>
@@ -110,6 +105,10 @@
               <text class="info-label">工厂</text>
               <text class="info-value">{{ order.assignedFactory?.factoryName || '未分配' }}</text>
             </view>
+            <view class="info-row" v-if="order.coordinator">
+              <text class="info-label">理单员</text>
+              <text class="info-value">{{ order.coordinator.realName }}</text>
+            </view>
             <view class="info-row" v-if="order.merchandiser">
               <text class="info-label">跟单员</text>
               <text class="info-value">{{ order.merchandiser.realName }}</text>
@@ -172,31 +171,65 @@
           </view>
         </view>
 
-        <!-- ========== Tab 2: 辅料进度 ========== -->
+        <!-- ========== Tab 2: 物料进度 ========== -->
         <view v-if="activeTab === 'trims'" class="tab-panel">
+          <!-- 面料信息卡片 -->
+          <view class="card">
+            <view class="card-title">面料信息</view>
+            <view v-if="fabricItems.length > 0">
+              <view v-for="(fabric, idx) in fabricItems" :key="idx" class="fabric-item">
+                <view class="info-row">
+                  <text class="info-label">品名</text>
+                  <text class="info-value">{{ fabric.name || '-' }}</text>
+                </view>
+                <view class="info-row">
+                  <text class="info-label">颜色</text>
+                  <text class="info-value">{{ fabric.color || '-' }}</text>
+                </view>
+                <view class="info-row">
+                  <text class="info-label">数量</text>
+                  <text class="info-value">{{ fabric.qty || '-' }} {{ fabric.unit || '米' }}</text>
+                </view>
+                <view class="info-row">
+                  <text class="info-label">计划到厂</text>
+                  <text class="info-value">{{ fabric.planDate ? formatDate(fabric.planDate) : '-' }}</text>
+                </view>
+                <view class="info-row">
+                  <text class="info-label">实际到厂</text>
+                  <text class="info-value">{{ fabric.actualDate ? formatDate(fabric.actualDate) : '-' }}</text>
+                </view>
+              </view>
+            </view>
+            <view v-else class="empty-text">暂无面料信息</view>
+          </view>
+
           <!-- 齐套状态卡片 -->
           <view class="card">
             <view class="card-title-row">
-              <text class="card-title-inline">辅料齐套状态</text>
-              <text
+              <text class="card-title-inline">物料齐套状态</text>
+              <view
                 v-if="userStore.isAdmin"
                 class="trim-manage-btn"
                 @tap="goTrimManage"
-              >管理辅料</text>
+              >
+                <text>管理物料</text>
+              </view>
             </view>
             <view class="trims-ready-banner" :class="(order.trimsSummary?.allReady) ? 'banner-green' : 'banner-amber'">
               <text class="banner-text">
-                {{ order.trimsSummary?.allReady ? '✓ 全部辅料已齐套' : `辅料齐套中 ${order.trimsSummary?.ready || 0}/${order.trimsSummary?.total || 0}` }}
+                {{ order.trimsSummary?.allReady ? '全部物料已齐套' : `物料齐套中 ${order.trimsSummary?.ready || 0}/${order.trimsSummary?.total || 0}` }}
               </text>
-              <text
+              <view
                 v-if="userStore.isAdmin"
                 class="banner-action"
                 @tap="handleCheckTrimsReady"
-              >刷新检查</text>
+              >
+                <text>刷新检查</text>
+              </view>
             </view>
           </view>
 
-          <!-- 辅料列表 -->
+          <!-- 物料列表 -->
           <view
             v-for="trim in order.trims"
             :key="trim.id"
@@ -216,7 +249,11 @@
               </view>
               <view class="info-row">
                 <text class="info-label">用量</text>
-                <text class="info-value">{{ trim.usagePerPiece }} {{ trim.unit }}/件 × {{ order.totalQty }}件 = {{ trim.totalDemand }} {{ trim.unit }}</text>
+                <text class="info-value">{{ trim.usagePerPiece }} {{ trim.unit }}/件 x {{ order.totalQty }}件 = {{ trim.totalDemand }} {{ trim.unit }}</text>
+              </view>
+              <view class="info-row" v-if="trim.totalQty">
+                <text class="info-label">总数量</text>
+                <text class="info-value">{{ trim.totalQty }} {{ trim.unit }}</text>
               </view>
               <view class="info-row" v-if="trim.supplier">
                 <text class="info-label">供应商</text>
@@ -231,18 +268,23 @@
                 <view class="step" :class="getSamplingStepClass(trim.samplingStatus)">
                   <text>待处理</text>
                 </view>
-                <view class="step-arrow">→</view>
+                <view class="step-arrow">></view>
                 <view class="step" :class="['in_sampling','sent_for_approval','approved','rejected'].includes(trim.samplingStatus) ? 'step-active' : ''">
                   <text>打样中</text>
                 </view>
-                <view class="step-arrow">→</view>
+                <view class="step-arrow">></view>
                 <view class="step" :class="['sent_for_approval','approved'].includes(trim.samplingStatus) ? 'step-active' : ''">
                   <text>寄客批</text>
                 </view>
-                <view class="step-arrow">→</view>
+                <view class="step-arrow">></view>
                 <view class="step" :class="trim.samplingStatus === 'approved' ? 'step-done' : ''">
                   <text>已确认</text>
                 </view>
+              </view>
+              <!-- 打样时间 -->
+              <view class="dates-row" v-if="trim.samplingSentDate || trim.samplingApprovedDate">
+                <text v-if="trim.samplingSentDate" class="date-text">寄出: {{ formatDate(trim.samplingSentDate) }}</text>
+                <text v-if="trim.samplingApprovedDate" class="date-text">确认: {{ formatDate(trim.samplingApprovedDate) }}</text>
               </view>
             </view>
 
@@ -253,15 +295,15 @@
                 <view class="step" :class="['ordered','producing','shipped','received'].includes(trim.bulkPoStatus) ? 'step-active' : ''">
                   <text>已下单</text>
                 </view>
-                <view class="step-arrow">→</view>
+                <view class="step-arrow">></view>
                 <view class="step" :class="trim.bulkEtd ? 'step-active' : ''">
                   <text>预计到厂 {{ trim.bulkEtd ? formatDate(trim.bulkEtd) : '-' }}</text>
                 </view>
-                <view class="step-arrow">→</view>
+                <view class="step-arrow">></view>
                 <view class="step" :class="trim.bulkEta ? 'step-active' : ''">
                   <text>实际到厂 {{ trim.bulkEta ? formatDate(trim.bulkEta) : '-' }}</text>
                 </view>
-                <view class="step-arrow">→</view>
+                <view class="step-arrow">></view>
                 <view class="step" :class="trim.qtyCheckStatus === 'sufficient' ? 'step-done' : trim.qtyCheckStatus === 'short' ? 'step-fail' : ''">
                   <text>清点: {{ TRIM_BULK_LABELS_QTY[trim.qtyCheckStatus] || '待清点' }}</text>
                 </view>
@@ -274,7 +316,7 @@
             </view>
           </view>
 
-          <view v-if="order.trims.length === 0" class="empty-text">暂无辅料记录</view>
+          <view v-if="order.trims.length === 0" class="empty-text">暂无物料记录</view>
         </view>
 
         <!-- ========== Tab 3: T&A 生产进度 ========== -->
@@ -306,18 +348,22 @@
                 <text class="tag" :class="STATUS_COLORS[stage.status]">
                   {{ STATUS_LABELS[stage.status] }}
                 </text>
-                <!-- 工厂端可更新大货生产阶段 -->
-                <text
-                  v-if="canUpdateStage(stage) && userStore.isFactory"
-                  class="ta-update-btn"
-                  @tap="showStageUpdate(stage)"
-                >更新</text>
                 <!-- 管理端可更新所有阶段 -->
-                <text
+                <view
                   v-if="userStore.isAdmin"
                   class="ta-update-btn"
                   @tap="showStageUpdate(stage)"
-                >更新</text>
+                >
+                  <text>更新</text>
+                </view>
+                <!-- 工厂端可更新大货生产阶段 -->
+                <view
+                  v-if="canUpdateStage(stage) && userStore.isFactory"
+                  class="ta-update-btn"
+                  @tap="showStageUpdate(stage)"
+                >
+                  <text>更新</text>
+                </view>
               </view>
             </view>
           </view>
@@ -339,11 +385,74 @@
         </view>
       </scroll-view>
     </template>
+
+    <!-- ========== T&A 阶段更新弹窗 ========== -->
+    <view v-if="showStageModal" class="modal-mask" @tap="showStageModal = false">
+      <view class="modal-content" @tap.stop>
+        <view class="modal-header">
+          <text class="modal-title">更新进度 - {{ editingStage?.stageName }}</text>
+          <view class="modal-close" @tap="showStageModal = false"><text>x</text></view>
+        </view>
+        <scroll-view scroll-y class="modal-body">
+          <view class="form-item">
+            <text class="form-label required">状态</text>
+            <picker mode="selector" :range="statusOptions" :range-key="'label'" @change="onStatusChange">
+              <view class="form-picker">
+                <text>{{ statusLabel || '请选择' }}</text>
+                <text class="picker-arrow">></text>
+              </view>
+            </picker>
+          </view>
+          <view class="form-item">
+            <text class="form-label">计划时间</text>
+            <picker mode="date" :value="stageUpdate.plannedDate" @change="(e: any) => stageUpdate.plannedDate = e.detail.value">
+              <view class="form-picker">
+                <text :class="{ placeholder: !stageUpdate.plannedDate }">{{ stageUpdate.plannedDate || '选择日期' }}</text>
+                <text class="picker-arrow">></text>
+              </view>
+            </picker>
+          </view>
+          <view class="form-item">
+            <text class="form-label">实际时间</text>
+            <picker mode="date" :value="stageUpdate.actualDate" @change="(e: any) => stageUpdate.actualDate = e.detail.value">
+              <view class="form-picker">
+                <text :class="{ placeholder: !stageUpdate.actualDate }">{{ stageUpdate.actualDate || '选择日期' }}</text>
+                <text class="picker-arrow">></text>
+              </view>
+            </picker>
+          </view>
+          <view class="form-item">
+            <text class="form-label">完成度(%)</text>
+            <input
+              :value="String(stageUpdate.completionPct || 0)"
+              class="form-input"
+              type="number"
+              placeholder="0-100"
+              placeholder-class="placeholder"
+              @input="(e: any) => stageUpdate.completionPct = parseInt(e.detail.value) || 0"
+            />
+          </view>
+          <view class="form-item">
+            <text class="form-label">备注</text>
+            <textarea
+              v-model="stageUpdate.remark"
+              class="form-textarea"
+              placeholder="进度备注..."
+              placeholder-class="placeholder"
+            />
+          </view>
+        </scroll-view>
+        <view class="modal-footer">
+          <button class="btn-cancel" @tap="showStageModal = false">取消</button>
+          <button class="btn-submit" @tap="handleStageUpdate">保存</button>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, reactive, onMounted, onUnmounted } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { useUserStore } from '../../stores/user';
 import { getOrderDetail, updateTaStage, checkTrimsReady } from '../../api/orders';
@@ -363,19 +472,20 @@ const loading = ref(true);
 const activeTab = ref('info');
 const orderId = ref(0);
 
+/** 面料信息（从订单remark或专用字段解析） */
+const fabricItems = ref<any[]>([]);
+
 /** 可见 Tab（按角色过滤） */
 const visibleTabs = computed(() => {
   const tabs = [
     { key: 'info', label: '基础信息' },
-    { key: 'trims', label: '辅料进度' },
+    { key: 'trims', label: '物料进度' },
     { key: 'ta', label: 'T&A进度' },
     { key: 'logs', label: '操作日志' },
   ];
-  // 客户端不显示操作日志
   if (userStore.isCustomer) {
     return tabs.filter((t) => t.key !== 'logs');
   }
-  // 工厂端不显示操作日志
   if (userStore.isFactory) {
     return tabs.filter((t) => t.key !== 'logs');
   }
@@ -390,7 +500,7 @@ const taCategories = [
   { key: 'shipping', label: '出货阶段' },
 ];
 
-/** 辅料状态映射 */
+/** 物料状态映射 */
 const TRIM_BULK_LABELS_QTY: Record<string, string> = {
   pending: '待清点',
   short: '短缺',
@@ -401,6 +511,26 @@ const TRIM_INSPECTION_LABELS: Record<string, string> = {
   pass: '合格',
   fail: '不合格',
 };
+
+/** T&A 阶段更新弹窗 */
+const showStageModal = ref(false);
+const editingStage = ref<OrderTaStage | null>(null);
+const stageUpdate = reactive({
+  status: '',
+  plannedDate: '',
+  actualDate: '',
+  completionPct: 0,
+  remark: '',
+});
+const statusOptions = [
+  { value: 'not_started', label: '未开始' },
+  { value: 'in_progress', label: '进行中' },
+  { value: 'completed', label: '已完成' },
+  { value: 'delayed', label: '延误' },
+];
+const statusLabel = computed(() =>
+  statusOptions.find((s) => s.value === stageUpdate.status)?.label || '',
+);
 
 /** 计算属性: 唯一颜色和尺码列表 */
 const uniqueColors = computed(() => {
@@ -422,10 +552,31 @@ async function loadOrderDetail() {
   loading.value = true;
   try {
     order.value = await getOrderDetail(orderId.value);
+    // 解析面料信息
+    parseFabricInfo();
   } catch (err: any) {
     uni.showToast({ title: '加载失败: ' + err.message, icon: 'none' });
   } finally {
     loading.value = false;
+  }
+}
+
+/** 解析面料信息（从trims中筛选面料类型，或从order字段） */
+function parseFabricInfo() {
+  if (!order.value) return;
+  // 从物料列表中筛选面料类型
+  const fabrics = order.value.trims?.filter((t: any) => t.trimCategory === 'fabric' || t.trimName?.includes('面料') || t.trimName?.includes('面布'));
+  if (fabrics && fabrics.length > 0) {
+    fabricItems.value = fabrics.map((f: any) => ({
+      name: f.trimName,
+      color: f.specification || '',
+      qty: f.totalDemand,
+      unit: f.unit || '米',
+      planDate: f.bulkEtd || '',
+      actualDate: f.bulkEta || '',
+    }));
+  } else {
+    fabricItems.value = [];
   }
 }
 
@@ -446,7 +597,6 @@ function getStagesByCategory(category: string): OrderTaStage[] {
   return order.value?.taStages.filter((s) => s.stageCategory === category) || [];
 }
 function canUpdateStage(stage: OrderTaStage): boolean {
-  // 工厂端只能更新大货生产阶段
   if (userStore.isFactory) {
     return stage.stageCategory === 'production';
   }
@@ -455,31 +605,48 @@ function canUpdateStage(stage: OrderTaStage): boolean {
 
 /** 显示阶段更新弹窗 */
 function showStageUpdate(stage: OrderTaStage) {
-  const statuses = ['not_started', 'in_progress', 'completed', 'delayed'];
-  uni.showActionSheet({
-    itemList: statuses.map((s) => STATUS_LABELS[s]),
-    success: async (res) => {
-      const newStatus = statuses[res.tapIndex];
-      try {
-        await updateTaStage(orderId.value, stage.stageCode, { status: newStatus });
-        uni.showToast({ title: '更新成功', icon: 'success' });
-        await loadOrderDetail(); // 刷新详情
-      } catch (err: any) {
-        uni.showToast({ title: '更新失败', icon: 'none' });
-      }
-    },
-  });
+  editingStage.value = stage;
+  stageUpdate.status = stage.status;
+  stageUpdate.plannedDate = stage.plannedDate ? formatDate(stage.plannedDate) : '';
+  stageUpdate.actualDate = stage.actualDate ? formatDate(stage.actualDate) : '';
+  stageUpdate.completionPct = stage.completionPct || 0;
+  stageUpdate.remark = stage.remark || '';
+  showStageModal.value = true;
 }
 
-/** 一键检查辅料齐套 */
+function onStatusChange(e: any) {
+  stageUpdate.status = statusOptions[e.detail.value].value;
+}
+
+async function handleStageUpdate() {
+  if (!editingStage.value) return;
+  try {
+    const data: any = {
+      status: stageUpdate.status,
+      completionPct: stageUpdate.completionPct || 0,
+    };
+    if (stageUpdate.plannedDate) data.plannedDate = stageUpdate.plannedDate;
+    if (stageUpdate.actualDate) data.actualDate = stageUpdate.actualDate;
+    if (stageUpdate.remark) data.remark = stageUpdate.remark;
+
+    await updateTaStage(orderId.value, editingStage.value.stageCode, data);
+    uni.showToast({ title: '更新成功', icon: 'success' });
+    showStageModal.value = false;
+    await loadOrderDetail();
+  } catch (err: any) {
+    uni.showToast({ title: '更新失败', icon: 'none' });
+  }
+}
+
+/** 一键检查物料齐套 */
 async function handleCheckTrimsReady() {
   try {
     const result = await checkTrimsReady(orderId.value);
     if (result.allReady) {
-      uni.showToast({ title: '所有辅料已齐套', icon: 'success' });
+      uni.showToast({ title: '所有物料已齐套', icon: 'success' });
     } else {
       const notReady = result.notReadyItems.map((i) => `${i.trimName}: ${i.missingSteps.join(',')}`).join('\n');
-      uni.showModal({ title: '辅料未齐套', content: notReady, showCancel: false });
+      uni.showModal({ title: '物料未齐套', content: notReady, showCancel: false });
     }
     await loadOrderDetail();
   } catch (err: any) {
@@ -487,7 +654,7 @@ async function handleCheckTrimsReady() {
   }
 }
 
-/** 跳转辅料管理页 */
+/** 跳转物料管理页 */
 function goTrimManage() {
   uni.navigateTo({ url: `/pages/trim-manage/index?orderId=${orderId.value}` });
 }
@@ -526,7 +693,6 @@ onMounted(() => {
   if (orderId.value) {
     subscribeOrderLogs(orderId.value, (newLogs) => {
       if (order.value) {
-        // 将新日志插入到日志列表头部（最新的在前）
         order.value.logs = [...newLogs, ...order.value.logs];
       }
     });
@@ -646,6 +812,13 @@ onUnmounted(() => {
 .info-label { color: #888780; min-width: 140rpx; }
 .info-value { color: #333333; flex: 1; }
 
+/* 面料信息 */
+.fabric-item {
+  padding: 12rpx 0;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+.fabric-item:last-child { border-bottom: none; }
+
 /* 颜色尺码矩阵 — 横向滚动 */
 .matrix-wrapper { border: 1rpx solid #e0e0e0; border-radius: 8rpx; overflow: hidden; }
 .matrix-scroll { width: 100%; white-space: nowrap; }
@@ -677,7 +850,7 @@ onUnmounted(() => {
 .matrix-size-total { color: #5F5E5A; width: 100rpx; min-width: 100rpx; }
 .matrix-grand-total { background: #E1F5EE; font-weight: 700; color: #0F6E56; font-size: 28rpx; width: 110rpx; min-width: 110rpx; }
 
-/* 辅料 */
+/* 物料 */
 .trim-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12rpx; }
 .trim-name { font-size: 28rpx; font-weight: 600; color: #2C2C2A; }
 .trim-info { margin-bottom: 16rpx; }
@@ -695,6 +868,8 @@ onUnmounted(() => {
 .step-done { background: #E1F5EE; color: #0F6E56; }
 .step-fail { background: #FCEBEB; color: #A32D2D; }
 .step-arrow { color: #B4B2A9; font-size: 20rpx; }
+.dates-row { display: flex; gap: 20rpx; margin-top: 8rpx; }
+.date-text { font-size: 22rpx; color: #888780; }
 .trims-ready-banner { display: flex; justify-content: space-between; align-items: center; padding: 20rpx; border-radius: 12rpx; }
 .banner-green { background: #E1F5EE; }
 .banner-amber { background: #FAEEDA; }
@@ -724,6 +899,80 @@ onUnmounted(() => {
 .log-content { display: flex; flex-direction: column; gap: 4rpx; }
 .log-user { font-size: 26rpx; color: #185FA5; font-weight: 500; }
 .log-summary { font-size: 26rpx; color: #333333; }
+
+/* 弹窗 */
+.modal-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 200;
+  display: flex;
+  align-items: flex-end;
+}
+.modal-content {
+  width: 100%;
+  max-height: 85vh;
+  background: #fff;
+  border-radius: 24rpx 24rpx 0 0;
+  display: flex;
+  flex-direction: column;
+}
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24rpx;
+  border-bottom: 1rpx solid #f0f0f0;
+}
+.modal-title { font-size: 30rpx; font-weight: 600; color: #2C2C2A; }
+.modal-close { font-size: 32rpx; color: #B4B2A9; }
+.modal-body { flex: 1; padding: 24rpx; max-height: 60vh; }
+.modal-footer { display: flex; gap: 20rpx; padding: 20rpx 24rpx; border-top: 1rpx solid #f0f0f0; }
+
+/* 表单 */
+.form-item { margin-bottom: 20rpx; }
+.form-label { display: block; font-size: 26rpx; color: #5F5E5A; margin-bottom: 8rpx; }
+.form-label.required::after { content: ' *'; color: #A32D2D; }
+.form-input {
+  width: 100%;
+  height: 72rpx;
+  padding: 0 20rpx;
+  background: #F8F8F6;
+  border-radius: 10rpx;
+  font-size: 28rpx;
+  color: #2C2C2A;
+  border: 1rpx solid #E0E0E0;
+  box-sizing: border-box;
+}
+.form-textarea {
+  width: 100%;
+  min-height: 100rpx;
+  padding: 16rpx 20rpx;
+  background: #F8F8F6;
+  border-radius: 10rpx;
+  font-size: 28rpx;
+  color: #2C2C2A;
+  border: 1rpx solid #E0E0E0;
+}
+.form-picker {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 72rpx;
+  padding: 0 20rpx;
+  background: #F8F8F6;
+  border-radius: 10rpx;
+  border: 1rpx solid #E0E0E0;
+  font-size: 28rpx;
+  color: #2C2C2A;
+}
+.picker-arrow { color: #B4B2A9; }
+.placeholder { color: #B4B2A9; }
+.btn-cancel { flex: 1; height: 80rpx; line-height: 80rpx; background: #F1EFE8; color: #5F5E5A; border-radius: 12rpx; font-size: 28rpx; border: none; }
+.btn-submit { flex: 1; height: 80rpx; line-height: 80rpx; background: #185FA5; color: #fff; border-radius: 12rpx; font-size: 28rpx; border: none; }
 
 /* 通用 */
 .empty-text { text-align: center; padding: 40rpx; color: #B4B2A9; font-size: 26rpx; }

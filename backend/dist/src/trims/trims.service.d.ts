@@ -7,21 +7,27 @@ export declare class CreateTrimDto {
     specification?: string;
     usagePerPiece: number;
     unit?: string;
+    totalDemand?: number;
     supplierId?: number;
     remark?: string;
 }
 export declare class UpdateTrimStatusDto {
     samplingStatus?: string;
+    samplingArrangeDate?: string;
+    samplingCompleteDate?: string;
     samplingSentDate?: string;
     samplingApprovedDate?: string;
     samplingRemark?: string;
     bulkPoNo?: string;
     bulkPoStatus?: string;
     bulkPoDate?: string;
+    bulkPlanCompleteDate?: string;
+    bulkActualCompleteDate?: string;
     bulkEtd?: string;
     bulkEta?: string;
     receivedQty?: number;
     qtyCheckStatus?: string;
+    qtyCheckDate?: string;
     inspectionResult?: string;
     inspectionNote?: string;
 }

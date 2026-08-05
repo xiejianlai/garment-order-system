@@ -37,12 +37,12 @@
         </view>
       </view>
       <scroll-view v-if="options.customers.length > 0" scroll-x class="chip-bar" show-scrollbar="false">
-        <text
+        <view
           v-for="c in options.customers"
           :key="c.id"
           class="chip"
           @tap="form.customerName = c.name"
-        >{{ c.name }}</text>
+        >{{ c.name }}</view>
       </scroll-view>
 
       <!-- 款号 + 款式名称 → 一行 -->
@@ -67,24 +67,16 @@
         </view>
       </view>
 
-      <!-- 季节 + 交期 → 一行 -->
+      <!-- 季节 + 交期 → 一行 (季节只保留输入框) -->
       <view class="form-row">
         <view class="form-item half">
           <text class="form-label">季节</text>
           <input
             v-model="form.season"
             class="form-input"
-            placeholder="如: 春季"
+            placeholder="如: 2026春季"
             placeholder-class="placeholder"
           />
-          <view class="chip-bar-static">
-            <text
-              v-for="s in seasonOptions"
-              :key="s"
-              class="chip-sm"
-              @tap="form.season = s"
-            >{{ s }}</text>
-          </view>
         </view>
         <view class="form-item half">
           <text class="form-label required">交期</text>
@@ -103,42 +95,42 @@
         </view>
       </view>
 
-      <!-- 品类 → 单独一行 -->
-      <view class="form-item">
-        <text class="form-label">品类</text>
-        <input
-          v-model="form.category"
-          class="form-input"
-          placeholder="如: 卫衣"
-          placeholder-class="placeholder"
-        />
-        <view class="chip-bar-static">
-          <text
-            v-for="c in categoryOptions"
-            :key="c"
-            class="chip-sm"
-            @tap="form.category = c"
-          >{{ c }}</text>
+      <!-- 品类 + 工厂 → 一行 -->
+      <view class="form-row">
+        <view class="form-item half">
+          <text class="form-label">品类</text>
+          <input
+            v-model="form.category"
+            class="form-input"
+            placeholder="如: 卫衣"
+            placeholder-class="placeholder"
+          />
+          <view class="chip-bar-static" v-if="localCategories.length > 0">
+            <view
+              v-for="c in localCategories"
+              :key="c"
+              class="chip-sm"
+              @tap="form.category = c"
+            >{{ c }}</view>
+          </view>
         </view>
-      </view>
-
-      <!-- 工厂 → 单独一行 -->
-      <view class="form-item">
-        <text class="form-label">分配工厂</text>
-        <input
-          v-model="form.factoryName"
-          class="form-input"
-          placeholder="输入或选择工厂名称"
-          placeholder-class="placeholder"
-        />
-        <scroll-view v-if="options.factories.length > 0" scroll-x class="chip-bar" show-scrollbar="false">
-          <text
-            v-for="f in options.factories"
-            :key="f.id"
-            class="chip"
-            @tap="form.factoryName = f.name"
-          >{{ f.name }}</text>
-        </scroll-view>
+        <view class="form-item half">
+          <text class="form-label">分配工厂</text>
+          <input
+            v-model="form.factoryName"
+            class="form-input"
+            placeholder="输入或选择工厂"
+            placeholder-class="placeholder"
+          />
+          <view class="chip-bar-static" v-if="localFactories.length > 0">
+            <view
+              v-for="f in localFactories"
+              :key="f"
+              class="chip-sm"
+              @tap="form.factoryName = f"
+            >{{ f }}</view>
+          </view>
+        </view>
       </view>
 
       <!-- 理单 + 跟单 → 一行 -->
@@ -151,13 +143,13 @@
             placeholder="输入或选择理单"
             placeholder-class="placeholder"
           />
-          <view class="chip-bar-static">
-            <text
-              v-for="c in options.coordinators"
-              :key="c.id"
+          <view class="chip-bar-static" v-if="localCoordinators.length > 0">
+            <view
+              v-for="c in localCoordinators"
+              :key="c"
               class="chip-sm"
-              @tap="form.coordinatorName = c.name"
-            >{{ c.name }}</text>
+              @tap="form.coordinatorName = c"
+            >{{ c }}</view>
           </view>
         </view>
         <view class="form-item half">
@@ -168,13 +160,13 @@
             placeholder="输入或选择跟单"
             placeholder-class="placeholder"
           />
-          <view class="chip-bar-static">
-            <text
-              v-for="m in options.merchandisers"
-              :key="m.id"
+          <view class="chip-bar-static" v-if="localMerchandisers.length > 0">
+            <view
+              v-for="m in localMerchandisers"
+              :key="m"
               class="chip-sm"
-              @tap="form.merchandiserName = m.name"
-            >{{ m.name }}</text>
+              @tap="form.merchandiserName = m"
+            >{{ m }}</view>
           </view>
         </view>
       </view>
@@ -184,7 +176,7 @@
         <view class="image-upload-area">
           <view v-if="form.garmentImageUrl" class="image-preview">
             <image :src="form.garmentImageUrl" mode="aspectFit" class="preview-img" />
-            <text class="remove-img" @tap="form.garmentImageUrl = ''">x</text>
+            <view class="remove-img" @tap="form.garmentImageUrl = ''"><text>x</text></view>
           </view>
           <view v-else class="upload-btn" @tap="uploadImage">
             <text class="upload-icon">+</text>
@@ -207,7 +199,7 @@
     <!-- ========== 颜色尺码矩阵 ========== -->
     <view class="card">
       <view class="card-title">
-        颜色尺码矩阵
+        <text>颜色尺码矩阵</text>
         <text class="card-subtitle">总数量: {{ totalQty }} 件</text>
       </view>
 
@@ -347,7 +339,7 @@ const newSize = ref('');
 // 矩阵数据: { "红色|S": 100, "红色|M": 200 }
 const matrixData = ref<Record<string, number>>({});
 
-// 下拉选项数据
+// 下拉选项数据（从后端加载）
 const options = reactive<{
   customers: { id: number; code: string; name: string }[];
   factories: { id: number; code: string; name: string; type: string }[];
@@ -360,8 +352,35 @@ const options = reactive<{
   merchandisers: [],
 });
 
-const seasonOptions = ['春季', '夏季', '秋季', '冬季', '全年'];
-const categoryOptions = ['卫衣', 'T恤', '裤装', '外套', '连衣裙', '衬衫', '套装'];
+// 本地缓存的选项（输入新值后自动记忆）
+const localCategories = ref<string[]>([]);
+const localFactories = ref<string[]>([]);
+const localCoordinators = ref<string[]>([]);
+const localMerchandisers = ref<string[]>([]);
+
+/** 从本地缓存加载历史输入 */
+function loadLocalOptions() {
+  try {
+    localCategories.value = uni.getStorageSync('local_categories') || [];
+    localFactories.value = uni.getStorageSync('local_factories') || [];
+    localCoordinators.value = uni.getStorageSync('local_coordinators') || [];
+    localMerchandisers.value = uni.getStorageSync('local_merchandisers') || [];
+  } catch (e) {
+    console.error('加载本地选项失败:', e);
+  }
+}
+
+/** 保存新值到本地缓存 */
+function saveLocalOption(key: string, list: string[], value: string) {
+  const val = value.trim();
+  if (!val || list.includes(val)) return;
+  list.push(val);
+  try {
+    uni.setStorageSync(key, list);
+  } catch (e) {
+    console.error('保存本地选项失败:', e);
+  }
+}
 
 const submitting = ref(false);
 
@@ -378,10 +397,21 @@ async function loadOptions() {
     options.factories = res.factories || [];
     options.coordinators = res.coordinators || [];
     options.merchandisers = res.merchandisers || [];
+    // 后端返回的也加入本地缓存显示
+    options.factories.forEach((f) => {
+      if (!localFactories.value.includes(f.name)) localFactories.value.push(f.name);
+    });
+    options.coordinators.forEach((c) => {
+      if (!localCoordinators.value.includes(c.name)) localCoordinators.value.push(c.name);
+    });
+    options.merchandisers.forEach((m) => {
+      if (!localMerchandisers.value.includes(m.name)) localMerchandisers.value.push(m.name);
+    });
   } catch (err) {
     console.error('加载选项数据失败:', err);
   }
 }
+loadLocalOptions();
 loadOptions();
 
 /** 矩阵操作 */
@@ -560,6 +590,13 @@ async function handleSubmit() {
     };
 
     await createOrder(payload);
+
+    // 自动记忆新输入的值
+    if (form.category.trim()) saveLocalOption('local_categories', localCategories.value, form.category);
+    if (form.factoryName.trim()) saveLocalOption('local_factories', localFactories.value, form.factoryName);
+    if (form.coordinatorName.trim()) saveLocalOption('local_coordinators', localCoordinators.value, form.coordinatorName);
+    if (form.merchandiserName.trim()) saveLocalOption('local_merchandisers', localMerchandisers.value, form.merchandiserName);
+
     uni.showToast({ title: '订单创建成功', icon: 'success' });
     // 通知列表页刷新（比单纯依赖 onShow 更可靠）
     uni.$emit('orderCreated');

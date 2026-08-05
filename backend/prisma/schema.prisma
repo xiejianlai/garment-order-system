@@ -243,20 +243,25 @@ model OrderTrim {
   // 打样阶段
   samplingStatus      String   @default("pending") @map("sampling_status") @db.VarChar(30)
   // pending | in_sampling | sent_for_approval | approved | rejected
-  samplingSentDate    DateTime? @map("sampling_sent_date") @db.Date
-  samplingApprovedDate DateTime? @map("sampling_approved_date") @db.Date
+  samplingArrangeDate DateTime? @map("sampling_arrange_date") @db.Date  // 安排打样时间
+  samplingCompleteDate DateTime? @map("sampling_complete_date") @db.Date // 打样完成时间
+  samplingSentDate    DateTime? @map("sampling_sent_date") @db.Date     // 寄批时间
+  samplingApprovedDate DateTime? @map("sampling_approved_date") @db.Date // 确认时间
   samplingRemark      String?  @map("sampling_remark") @db.VarChar(300)
 
   // 大货阶段
   bulkPoNo            String?  @map("bulk_po_no") @db.VarChar(30)
   bulkPoStatus        String   @default("not_ordered") @map("bulk_po_status") @db.VarChar(20)
   // not_ordered | ordered | producing | shipped | received
-  bulkPoDate          DateTime? @map("bulk_po_date") @db.Date
-  bulkEtd             DateTime? @map("bulk_etd") @db.Date
-  bulkEta             DateTime? @map("bulk_eta") @db.Date
+  bulkPoDate          DateTime? @map("bulk_po_date") @db.Date       // 下单时间
+  bulkPlanCompleteDate DateTime? @map("bulk_plan_complete_date") @db.Date // 计划完成时间
+  bulkActualCompleteDate DateTime? @map("bulk_actual_complete_date") @db.Date // 实际完成时间
+  bulkEtd             DateTime? @map("bulk_etd") @db.Date           // 计划到厂时间
+  bulkEta             DateTime? @map("bulk_eta") @db.Date           // 实际到厂时间
   receivedQty         Int?     @map("received_qty")
   qtyCheckStatus      String   @default("pending") @map("qty_check_status") @db.VarChar(20)
   // pending | short | sufficient
+  qtyCheckDate        DateTime? @map("qty_check_date") @db.Date     // 清点时间
   inspectionResult    String   @default("pending") @map("inspection_result") @db.VarChar(20)
   // pending | pass | fail
   inspectionNote      String?  @map("inspection_note") @db.VarChar(300)

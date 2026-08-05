@@ -9,6 +9,7 @@ export class CreateTrimDto {
   specification?: string;
   usagePerPiece: number;
   unit?: string;
+  totalDemand?: number;
   supplierId?: number;
   remark?: string;
 }
@@ -16,6 +17,8 @@ export class CreateTrimDto {
 export class UpdateTrimStatusDto {
   // 打样阶段
   samplingStatus?: string;
+  samplingArrangeDate?: string;
+  samplingCompleteDate?: string;
   samplingSentDate?: string;
   samplingApprovedDate?: string;
   samplingRemark?: string;
@@ -23,10 +26,13 @@ export class UpdateTrimStatusDto {
   bulkPoNo?: string;
   bulkPoStatus?: string;
   bulkPoDate?: string;
+  bulkPlanCompleteDate?: string;
+  bulkActualCompleteDate?: string;
   bulkEtd?: string;
   bulkEta?: string;
   receivedQty?: number;
   qtyCheckStatus?: string;
+  qtyCheckDate?: string;
   inspectionResult?: string;
   inspectionNote?: string;
 }
@@ -51,7 +57,9 @@ export class TrimsService {
     });
     if (!order) throw new NotFoundException('订单不存在');
 
-    const totalDemand = Math.ceil(dto.usagePerPiece * order.totalQty);
+    const totalDemand = dto.totalDemand && dto.totalDemand > 0
+      ? dto.totalDemand
+      : Math.ceil(dto.usagePerPiece * order.totalQty);
 
     const trim = await this.prisma.$transaction(async (tx) => {
       const newTrim = await tx.orderTrim.create({
@@ -114,6 +122,8 @@ export class TrimsService {
       updateData.samplingStatus = dto.samplingStatus;
       changes.push(`打样状态: ${trim.samplingStatus} → ${dto.samplingStatus}`);
     }
+    if (dto.samplingArrangeDate) updateData.samplingArrangeDate = new Date(dto.samplingArrangeDate);
+    if (dto.samplingCompleteDate) updateData.samplingCompleteDate = new Date(dto.samplingCompleteDate);
     if (dto.samplingSentDate) updateData.samplingSentDate = new Date(dto.samplingSentDate);
     if (dto.samplingApprovedDate) updateData.samplingApprovedDate = new Date(dto.samplingApprovedDate);
     if (dto.samplingRemark !== undefined) updateData.samplingRemark = dto.samplingRemark;
@@ -124,6 +134,8 @@ export class TrimsService {
       changes.push(`大货状态: ${trim.bulkPoStatus} → ${dto.bulkPoStatus}`);
     }
     if (dto.bulkPoDate) updateData.bulkPoDate = new Date(dto.bulkPoDate);
+    if (dto.bulkPlanCompleteDate) updateData.bulkPlanCompleteDate = new Date(dto.bulkPlanCompleteDate);
+    if (dto.bulkActualCompleteDate) updateData.bulkActualCompleteDate = new Date(dto.bulkActualCompleteDate);
     if (dto.bulkEtd) updateData.bulkEtd = new Date(dto.bulkEtd);
     if (dto.bulkEta) updateData.bulkEta = new Date(dto.bulkEta);
     if (dto.receivedQty !== undefined) updateData.receivedQty = dto.receivedQty;
@@ -131,6 +143,7 @@ export class TrimsService {
       updateData.qtyCheckStatus = dto.qtyCheckStatus;
       changes.push(`数量清点: ${trim.qtyCheckStatus} → ${dto.qtyCheckStatus}`);
     }
+    if (dto.qtyCheckDate) updateData.qtyCheckDate = new Date(dto.qtyCheckDate);
     if (dto.inspectionResult && dto.inspectionResult !== trim.inspectionResult) {
       updateData.inspectionResult = dto.inspectionResult;
       changes.push(`检验结果: ${trim.inspectionResult} → ${dto.inspectionResult}`);

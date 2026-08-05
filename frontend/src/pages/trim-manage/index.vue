@@ -1,12 +1,12 @@
 <!--
-  辅料管理页 — 小程序 + H5 双端
+  物料管理页 — 小程序 + H5 双端
 
   功能:
-  1. 查看订单所有辅料列表
-  2. 新增辅料（admin/merchandiser）
-  3. 更新辅料打样/大货进度状态
+  1. 查看订单所有物料列表
+  2. 新增物料（admin/merchandiser）
+  3. 更新物料打样/大货进度状态（含完整时间填写）
   4. 齐套状态可视化
-  5. 删除辅料
+  5. 删除物料
 
   权限: admin/merchandiser 可增删改, factory 只读
 -->
@@ -15,24 +15,24 @@
     <!-- 顶部齐套概览 -->
     <view class="ready-summary card">
       <view class="ready-info">
-        <text class="ready-title">辅料齐套状态</text>
+        <text class="ready-title">物料齐套状态</text>
         <view class="ready-bar">
           <view class="ready-bar-fill" :class="allReady ? 'fill-green' : 'fill-amber'" :style="{ width: readyPercent + '%' }"></view>
         </view>
         <text class="ready-text">
-          {{ allReady ? '全部辅料已齐套' : `齐套中 ${readyCount}/${totalCount}` }}
+          {{ allReady ? '全部物料已齐套' : `齐套中 ${readyCount}/${totalCount}` }}
         </text>
       </view>
-      <text class="check-btn" @tap="handleCheckReady">刷新检查</text>
+      <view class="check-btn" @tap="handleCheckReady">刷新检查</view>
     </view>
 
-    <!-- 辅料列表 -->
+    <!-- 物料列表 -->
     <view
       v-for="trim in trims"
       :key="trim.id"
       class="trim-card card"
     >
-      <!-- 辅料头部 -->
+      <!-- 物料头部 -->
       <view class="trim-header">
         <view class="trim-header-left">
           <text class="trim-name">{{ trim.trimName }}</text>
@@ -43,7 +43,7 @@
         </text>
       </view>
 
-      <!-- 辅料基本信息 -->
+      <!-- 物料基本信息 -->
       <view class="trim-info">
         <view class="info-row">
           <text class="info-label">规格</text>
@@ -71,11 +71,7 @@
       <view class="trim-section">
         <view class="section-header">
           <text class="section-title">打样阶段</text>
-          <text
-            v-if="canEdit"
-            class="edit-btn"
-            @tap="openSamplingUpdate(trim)"
-          >更新</text>
+          <view v-if="canEdit" class="edit-btn" @tap="openSamplingUpdate(trim)">更新</view>
         </view>
         <view class="status-steps">
           <view class="status-step" :class="getSamplingStepClass(trim.samplingStatus, 'pending')">待处理</view>
@@ -86,9 +82,24 @@
           <view class="step-line" :class="{ 'line-active': trim.samplingStatus === 'approved' }"></view>
           <view class="status-step" :class="getSamplingStepClass(trim.samplingStatus, 'approved')">已确认</view>
         </view>
-        <view class="dates-row" v-if="trim.samplingSentDate || trim.samplingApprovedDate">
-          <text v-if="trim.samplingSentDate" class="date-text">寄出: {{ formatDate(trim.samplingSentDate) }}</text>
-          <text v-if="trim.samplingApprovedDate" class="date-text">确认: {{ formatDate(trim.samplingApprovedDate) }}</text>
+        <!-- 打样时间显示 -->
+        <view class="dates-grid" v-if="trim.samplingArrangeDate || trim.samplingCompleteDate || trim.samplingSentDate || trim.samplingApprovedDate">
+          <view class="date-item" v-if="trim.samplingArrangeDate">
+            <text class="date-label">安排打样</text>
+            <text class="date-val">{{ formatDate(trim.samplingArrangeDate) }}</text>
+          </view>
+          <view class="date-item" v-if="trim.samplingCompleteDate">
+            <text class="date-label">打样完成</text>
+            <text class="date-val">{{ formatDate(trim.samplingCompleteDate) }}</text>
+          </view>
+          <view class="date-item" v-if="trim.samplingSentDate">
+            <text class="date-label">寄批</text>
+            <text class="date-val">{{ formatDate(trim.samplingSentDate) }}</text>
+          </view>
+          <view class="date-item" v-if="trim.samplingApprovedDate">
+            <text class="date-label">确认</text>
+            <text class="date-val">{{ formatDate(trim.samplingApprovedDate) }}</text>
+          </view>
         </view>
         <view class="remark-text" v-if="trim.samplingRemark">{{ trim.samplingRemark }}</view>
       </view>
@@ -97,11 +108,7 @@
       <view class="trim-section">
         <view class="section-header">
           <text class="section-title">大货阶段</text>
-          <text
-            v-if="canEdit"
-            class="edit-btn"
-            @tap="openBulkUpdate(trim)"
-          >更新</text>
+          <view v-if="canEdit" class="edit-btn" @tap="openBulkUpdate(trim)">更新</view>
         </view>
         <view class="status-steps">
           <view class="status-step" :class="getBulkStepClass(trim.bulkPoStatus, 'not_ordered')">未下单</view>
@@ -115,18 +122,26 @@
           <view class="status-step" :class="getBulkStepClass(trim.bulkPoStatus, 'received')">已到厂</view>
         </view>
 
-        <!-- 大货详情 -->
-        <view class="bulk-detail" v-if="trim.bulkPoNo || trim.bulkEtd || trim.bulkEta || trim.receivedQty">
+        <!-- 大货时间详情 -->
+        <view class="bulk-detail" v-if="trim.bulkPoNo || trim.bulkPoDate || trim.bulkPlanCompleteDate || trim.bulkActualCompleteDate || trim.bulkEtd || trim.bulkEta || trim.receivedQty !== null">
           <view class="info-row" v-if="trim.bulkPoNo">
             <text class="info-label">PO号</text>
             <text class="info-value">{{ trim.bulkPoNo }}</text>
           </view>
           <view class="info-row" v-if="trim.bulkPoDate">
-            <text class="info-label">下单日期</text>
+            <text class="info-label">下单时间</text>
             <text class="info-value">{{ formatDate(trim.bulkPoDate) }}</text>
           </view>
+          <view class="info-row" v-if="trim.bulkPlanCompleteDate">
+            <text class="info-label">计划完成</text>
+            <text class="info-value">{{ formatDate(trim.bulkPlanCompleteDate) }}</text>
+          </view>
+          <view class="info-row" v-if="trim.bulkActualCompleteDate">
+            <text class="info-label">实际完成</text>
+            <text class="info-value">{{ formatDate(trim.bulkActualCompleteDate) }}</text>
+          </view>
           <view class="info-row" v-if="trim.bulkEtd">
-            <text class="info-label">预计到厂</text>
+            <text class="info-label">计划到厂</text>
             <text class="info-value">{{ formatDate(trim.bulkEtd) }}</text>
           </view>
           <view class="info-row" v-if="trim.bulkEta">
@@ -146,6 +161,7 @@
             <text class="tag" :class="trim.qtyCheckStatus === 'sufficient' ? 'tag-green' : trim.qtyCheckStatus === 'short' ? 'tag-red' : 'tag-gray'">
               {{ TRIM_QTY_LABELS[trim.qtyCheckStatus] || '待清点' }}
             </text>
+            <text class="check-date" v-if="trim.qtyCheckDate">{{ formatDate(trim.qtyCheckDate) }}</text>
           </view>
           <view class="check-item">
             <text class="check-label">检验结果</text>
@@ -159,29 +175,29 @@
 
     <!-- 空状态 -->
     <view v-if="trims.length === 0" class="empty-state">
-      <text class="empty-text">暂无辅料记录</text>
-      <text v-if="canEdit" class="empty-action" @tap="openAddTrim">点击添加辅料</text>
+      <text class="empty-text">暂无物料记录</text>
+      <view v-if="canEdit" class="empty-action" @tap="openAddTrim">点击添加物料</view>
     </view>
 
-    <!-- 添加辅料按钮（浮动） -->
+    <!-- 添加物料按钮（浮动） -->
     <view v-if="canEdit" class="fab-btn" @tap="openAddTrim">
       <text class="fab-icon">+</text>
     </view>
 
-    <!-- ========== 新增辅料弹窗 ========== -->
-    <view v-if="showAddModal" class="modal-mask" @tap="showAddModal = false">
+    <!-- ========== 新增物料弹窗 ========== -->
+    <view v-if="showAddModal" class="modal-mask" @tap="showAddModal = false" @touchmove.stop.prevent>
       <view class="modal-content" @tap.stop>
         <view class="modal-header">
-          <text class="modal-title">新增辅料</text>
-          <text class="modal-close" @tap="showAddModal = false">x</text>
+          <text class="modal-title">新增物料</text>
+          <view class="modal-close" @tap="showAddModal = false">x</view>
         </view>
         <scroll-view scroll-y class="modal-body">
           <view class="form-item">
-            <text class="form-label required">辅料名称</text>
+            <text class="form-label required">物料名称</text>
             <input v-model="newTrim.trimName" class="form-input" placeholder="如: 主唛" placeholder-class="placeholder" />
           </view>
           <view class="form-item">
-            <text class="form-label required">辅料类型</text>
+            <text class="form-label required">物料类型</text>
             <picker mode="selector" :range="trimCategoryOptions" :range-key="'label'" @change="onCategoryChange">
               <view class="form-picker">
                 <text :class="{ placeholder: !newTrim.trimCategory }">
@@ -211,6 +227,10 @@
             </view>
           </view>
           <view class="form-item">
+            <text class="form-label">总需求量</text>
+            <input v-model="newTrim.totalDemand" class="form-input" type="number" placeholder="留空则自动计算" placeholder-class="placeholder" />
+          </view>
+          <view class="form-item">
             <text class="form-label">供应商</text>
             <picker mode="selector" :range="supplierOptions" :range-key="'factoryName'" @change="onSupplierChange">
               <view class="form-picker">
@@ -223,7 +243,7 @@
           </view>
           <view class="form-item">
             <text class="form-label">备注</text>
-            <textarea v-model="newTrim.remark" class="form-textarea" placeholder="辅料备注..." placeholder-class="placeholder" />
+            <textarea v-model="newTrim.remark" class="form-textarea" placeholder="物料备注..." placeholder-class="placeholder" />
           </view>
         </scroll-view>
         <view class="modal-footer">
@@ -234,11 +254,11 @@
     </view>
 
     <!-- ========== 打样状态更新弹窗 ========== -->
-    <view v-if="showSamplingModal" class="modal-mask" @tap="showSamplingModal = false">
+    <view v-if="showSamplingModal" class="modal-mask" @tap="showSamplingModal = false" @touchmove.stop.prevent>
       <view class="modal-content" @tap.stop>
         <view class="modal-header">
           <text class="modal-title">更新打样进度 - {{ editingTrim?.trimName }}</text>
-          <text class="modal-close" @tap="showSamplingModal = false">x</text>
+          <view class="modal-close" @tap="showSamplingModal = false">x</view>
         </view>
         <scroll-view scroll-y class="modal-body">
           <view class="form-item">
@@ -250,8 +270,26 @@
               </view>
             </picker>
           </view>
+          <view class="form-item">
+            <text class="form-label">安排打样时间</text>
+            <picker mode="date" :value="samplingUpdate.samplingArrangeDate" @change="(e: any) => samplingUpdate.samplingArrangeDate = e.detail.value">
+              <view class="form-picker">
+                <text :class="{ placeholder: !samplingUpdate.samplingArrangeDate }">{{ samplingUpdate.samplingArrangeDate || '请选择' }}</text>
+                <text class="picker-arrow">></text>
+              </view>
+            </picker>
+          </view>
+          <view class="form-item" v-if="['in_sampling','sent_for_approval','approved','rejected'].includes(samplingUpdate.samplingStatus)">
+            <text class="form-label">打样完成时间</text>
+            <picker mode="date" :value="samplingUpdate.samplingCompleteDate" @change="(e: any) => samplingUpdate.samplingCompleteDate = e.detail.value">
+              <view class="form-picker">
+                <text :class="{ placeholder: !samplingUpdate.samplingCompleteDate }">{{ samplingUpdate.samplingCompleteDate || '请选择' }}</text>
+                <text class="picker-arrow">></text>
+              </view>
+            </picker>
+          </view>
           <view class="form-item" v-if="['sent_for_approval','approved','rejected'].includes(samplingUpdate.samplingStatus)">
-            <text class="form-label">寄出日期</text>
+            <text class="form-label">寄批时间</text>
             <picker mode="date" :value="samplingUpdate.samplingSentDate" @change="(e: any) => samplingUpdate.samplingSentDate = e.detail.value">
               <view class="form-picker">
                 <text :class="{ placeholder: !samplingUpdate.samplingSentDate }">{{ samplingUpdate.samplingSentDate || '请选择' }}</text>
@@ -260,7 +298,7 @@
             </picker>
           </view>
           <view class="form-item" v-if="samplingUpdate.samplingStatus === 'approved'">
-            <text class="form-label">确认日期</text>
+            <text class="form-label">确认时间</text>
             <picker mode="date" :value="samplingUpdate.samplingApprovedDate" @change="(e: any) => samplingUpdate.samplingApprovedDate = e.detail.value">
               <view class="form-picker">
                 <text :class="{ placeholder: !samplingUpdate.samplingApprovedDate }">{{ samplingUpdate.samplingApprovedDate || '请选择' }}</text>
@@ -281,11 +319,11 @@
     </view>
 
     <!-- ========== 大货状态更新弹窗 ========== -->
-    <view v-if="showBulkModal" class="modal-mask" @tap="showBulkModal = false">
+    <view v-if="showBulkModal" class="modal-mask" @tap="showBulkModal = false" @touchmove.stop.prevent>
       <view class="modal-content" @tap.stop>
         <view class="modal-header">
           <text class="modal-title">更新大货进度 - {{ editingTrim?.trimName }}</text>
-          <text class="modal-close" @tap="showBulkModal = false">x</text>
+          <view class="modal-close" @tap="showBulkModal = false">x</view>
         </view>
         <scroll-view scroll-y class="modal-body">
           <view class="form-item">
@@ -301,28 +339,44 @@
             <text class="form-label">PO号</text>
             <input v-model="bulkUpdate.bulkPoNo" class="form-input" placeholder="大货采购单号" placeholder-class="placeholder" />
           </view>
-          <view class="form-row">
-            <view class="form-item half">
-              <text class="form-label">下单日期</text>
-              <picker mode="date" :value="bulkUpdate.bulkPoDate" @change="(e: any) => bulkUpdate.bulkPoDate = e.detail.value">
-                <view class="form-picker">
-                  <text :class="{ placeholder: !bulkUpdate.bulkPoDate }">{{ bulkUpdate.bulkPoDate || '选择日期' }}</text>
-                  <text class="picker-arrow">></text>
-                </view>
-              </picker>
-            </view>
-            <view class="form-item half">
-              <text class="form-label">预计到厂</text>
-              <picker mode="date" :value="bulkUpdate.bulkEtd" @change="(e: any) => bulkUpdate.bulkEtd = e.detail.value">
-                <view class="form-picker">
-                  <text :class="{ placeholder: !bulkUpdate.bulkEtd }">{{ bulkUpdate.bulkEtd || '选择日期' }}</text>
-                  <text class="picker-arrow">></text>
-                </view>
-              </picker>
-            </view>
+          <view class="form-item">
+            <text class="form-label">下单时间</text>
+            <picker mode="date" :value="bulkUpdate.bulkPoDate" @change="(e: any) => bulkUpdate.bulkPoDate = e.detail.value">
+              <view class="form-picker">
+                <text :class="{ placeholder: !bulkUpdate.bulkPoDate }">{{ bulkUpdate.bulkPoDate || '选择日期' }}</text>
+                <text class="picker-arrow">></text>
+              </view>
+            </picker>
           </view>
           <view class="form-item">
-            <text class="form-label">实际到厂日期</text>
+            <text class="form-label">计划完成时间</text>
+            <picker mode="date" :value="bulkUpdate.bulkPlanCompleteDate" @change="(e: any) => bulkUpdate.bulkPlanCompleteDate = e.detail.value">
+              <view class="form-picker">
+                <text :class="{ placeholder: !bulkUpdate.bulkPlanCompleteDate }">{{ bulkUpdate.bulkPlanCompleteDate || '选择日期' }}</text>
+                <text class="picker-arrow">></text>
+              </view>
+            </picker>
+          </view>
+          <view class="form-item">
+            <text class="form-label">实际完成时间</text>
+            <picker mode="date" :value="bulkUpdate.bulkActualCompleteDate" @change="(e: any) => bulkUpdate.bulkActualCompleteDate = e.detail.value">
+              <view class="form-picker">
+                <text :class="{ placeholder: !bulkUpdate.bulkActualCompleteDate }">{{ bulkUpdate.bulkActualCompleteDate || '选择日期' }}</text>
+                <text class="picker-arrow">></text>
+              </view>
+            </picker>
+          </view>
+          <view class="form-item">
+            <text class="form-label">计划到厂时间</text>
+            <picker mode="date" :value="bulkUpdate.bulkEtd" @change="(e: any) => bulkUpdate.bulkEtd = e.detail.value">
+              <view class="form-picker">
+                <text :class="{ placeholder: !bulkUpdate.bulkEtd }">{{ bulkUpdate.bulkEtd || '选择日期' }}</text>
+                <text class="picker-arrow">></text>
+              </view>
+            </picker>
+          </view>
+          <view class="form-item">
+            <text class="form-label">实际到厂时间</text>
             <picker mode="date" :value="bulkUpdate.bulkEta" @change="(e: any) => bulkUpdate.bulkEta = e.detail.value">
               <view class="form-picker">
                 <text :class="{ placeholder: !bulkUpdate.bulkEta }">{{ bulkUpdate.bulkEta || '选择日期' }}</text>
@@ -335,7 +389,16 @@
             <input v-model="bulkUpdate.receivedQty" class="form-input" type="number" :placeholder="`应到: ${editingTrim?.totalDemand || 0}`" placeholder-class="placeholder" />
           </view>
           <view class="form-item">
-            <text class="form-label">数量清点</text>
+            <text class="form-label">清点时间</text>
+            <picker mode="date" :value="bulkUpdate.qtyCheckDate" @change="(e: any) => bulkUpdate.qtyCheckDate = e.detail.value">
+              <view class="form-picker">
+                <text :class="{ placeholder: !bulkUpdate.qtyCheckDate }">{{ bulkUpdate.qtyCheckDate || '选择日期' }}</text>
+                <text class="picker-arrow">></text>
+              </view>
+            </picker>
+          </view>
+          <view class="form-item">
+            <text class="form-label">数量清点结果</text>
             <picker mode="selector" :range="qtyCheckOptions" :range-key="'label'" @change="onQtyCheckChange">
               <view class="form-picker">
                 <text>{{ qtyCheckLabel || '请选择' }}</text>
@@ -378,11 +441,11 @@ import {
 import type { OrderTrim } from '../../types';
 
 const userStore = useUserStore();
-const canEdit = computed(() => userStore.isAdmin);
+const canEdit = computed(() => userStore.isAdmin || userStore.role === 'merchandiser');
 const orderId = ref(0);
 
-// 辅料列表
-const trims = ref<OrderTrim[]>([]);
+// 物料列表
+const trims = ref<any[]>([]);
 const readyCount = computed(() => trims.value.filter((t) => t.isReady).length);
 const totalCount = computed(() => trims.value.length);
 const allReady = computed(() => totalCount.value > 0 && readyCount.value === totalCount.value);
@@ -428,7 +491,7 @@ const inspectionOptions = [
   { value: 'fail', label: '不合格' },
 ];
 
-// 新增辅料弹窗
+// 新增物料弹窗
 const showAddModal = ref(false);
 const newTrim = ref({
   trimName: '',
@@ -436,6 +499,7 @@ const newTrim = ref({
   specification: '',
   usagePerPiece: '',
   unit: 'pcs',
+  totalDemand: '',
   supplierId: 0,
   remark: '',
 });
@@ -445,7 +509,7 @@ const selectedSupplierName = computed(() =>
 
 // 打样更新弹窗
 const showSamplingModal = ref(false);
-const editingTrim = ref<OrderTrim | null>(null);
+const editingTrim = ref<any>(null);
 const samplingUpdate = ref<any>({});
 const samplingStatusLabel = computed(() =>
   TRIM_SAMPLING_LABELS[samplingUpdate.value.samplingStatus] || '',
@@ -466,7 +530,7 @@ const inspectionLabel = computed(() => {
   return opt?.label || '';
 });
 
-/** 加载辅料列表 */
+/** 加载物料列表 */
 async function loadTrims() {
   try {
     const detail = await http.get(`/orders/${orderId.value}`);
@@ -490,10 +554,10 @@ async function handleCheckReady() {
   try {
     const result = await http.get(`/trims/check/${orderId.value}`);
     if (result.allReady) {
-      uni.showToast({ title: '所有辅料已齐套', icon: 'success' });
+      uni.showToast({ title: '所有物料已齐套', icon: 'success' });
     } else {
       const items = result.notReadyItems.map((i: any) => `${i.trimName}: ${i.missingSteps.join(', ')}`).join('\n');
-      uni.showModal({ title: '辅料未齐套', content: items, showCancel: false });
+      uni.showModal({ title: '物料未齐套', content: items, showCancel: false });
     }
     await loadTrims();
   } catch (err) {
@@ -501,7 +565,7 @@ async function handleCheckReady() {
   }
 }
 
-// ========== 新增辅料 ==========
+// ========== 新增物料 ==========
 function openAddTrim() {
   newTrim.value = {
     trimName: '',
@@ -509,6 +573,7 @@ function openAddTrim() {
     specification: '',
     usagePerPiece: '',
     unit: 'pcs',
+    totalDemand: '',
     supplierId: 0,
     remark: '',
   };
@@ -530,11 +595,11 @@ function onSupplierChange(e: any) {
 
 async function handleAddTrim() {
   if (!newTrim.value.trimName.trim()) {
-    uni.showToast({ title: '请输入辅料名称', icon: 'none' });
+    uni.showToast({ title: '请输入物料名称', icon: 'none' });
     return;
   }
   if (!newTrim.value.trimCategory) {
-    uni.showToast({ title: '请选择辅料类型', icon: 'none' });
+    uni.showToast({ title: '请选择物料类型', icon: 'none' });
     return;
   }
   if (!newTrim.value.usagePerPiece || parseFloat(newTrim.value.usagePerPiece) <= 0) {
@@ -543,7 +608,7 @@ async function handleAddTrim() {
   }
 
   try {
-    await http.post(`/trims/${orderId.value}`, {
+    const payload: any = {
       trimName: newTrim.value.trimName.trim(),
       trimCategory: newTrim.value.trimCategory,
       specification: newTrim.value.specification || undefined,
@@ -551,7 +616,11 @@ async function handleAddTrim() {
       unit: newTrim.value.unit,
       supplierId: newTrim.value.supplierId || undefined,
       remark: newTrim.value.remark || undefined,
-    }, { showLoading: true, loadingText: '添加中...' });
+    };
+    if (newTrim.value.totalDemand && parseInt(newTrim.value.totalDemand) > 0) {
+      payload.totalDemand = parseInt(newTrim.value.totalDemand);
+    }
+    await http.post(`/trims/${orderId.value}`, payload, { showLoading: true, loadingText: '添加中...' });
     uni.showToast({ title: '添加成功', icon: 'success' });
     showAddModal.value = false;
     await loadTrims();
@@ -561,12 +630,14 @@ async function handleAddTrim() {
 }
 
 // ========== 打样更新 ==========
-function openSamplingUpdate(trim: OrderTrim) {
+function openSamplingUpdate(trim: any) {
   editingTrim.value = trim;
   samplingUpdate.value = {
     samplingStatus: trim.samplingStatus,
-    samplingSentDate: trim.samplingSentDate ? formatDate(trim.samplingSentDate) : '',
-    samplingApprovedDate: trim.samplingApprovedDate ? formatDate(trim.samplingApprovedDate) : '',
+    samplingArrangeDate: trim.samplingArrangeDate || '',
+    samplingCompleteDate: trim.samplingCompleteDate || '',
+    samplingSentDate: trim.samplingSentDate || '',
+    samplingApprovedDate: trim.samplingApprovedDate || '',
     samplingRemark: trim.samplingRemark || '',
   };
   showSamplingModal.value = true;
@@ -579,7 +650,12 @@ function onSamplingStatusChange(e: any) {
 async function handleSamplingUpdate() {
   if (!editingTrim.value) return;
   try {
-    await http.patch(`/trims/${editingTrim.value.id}/status`, samplingUpdate.value, {
+    const data: any = { ...samplingUpdate.value };
+    // 清理空值
+    Object.keys(data).forEach((key) => {
+      if (data[key] === '' || data[key] === null) delete data[key];
+    });
+    await http.patch(`/trims/${editingTrim.value.id}/status`, data, {
       showLoading: true,
       loadingText: '保存中...',
     });
@@ -592,16 +668,19 @@ async function handleSamplingUpdate() {
 }
 
 // ========== 大货更新 ==========
-function openBulkUpdate(trim: OrderTrim) {
+function openBulkUpdate(trim: any) {
   editingTrim.value = trim;
   bulkUpdate.value = {
     bulkPoNo: trim.bulkPoNo || '',
     bulkPoStatus: trim.bulkPoStatus,
-    bulkPoDate: trim.bulkPoDate ? formatDate(trim.bulkPoDate) : '',
-    bulkEtd: trim.bulkEtd ? formatDate(trim.bulkEtd) : '',
-    bulkEta: trim.bulkEta ? formatDate(trim.bulkEta) : '',
+    bulkPoDate: trim.bulkPoDate || '',
+    bulkPlanCompleteDate: trim.bulkPlanCompleteDate || '',
+    bulkActualCompleteDate: trim.bulkActualCompleteDate || '',
+    bulkEtd: trim.bulkEtd || '',
+    bulkEta: trim.bulkEta || '',
     receivedQty: trim.receivedQty,
     qtyCheckStatus: trim.qtyCheckStatus,
+    qtyCheckDate: trim.qtyCheckDate || '',
     inspectionResult: trim.inspectionResult,
     inspectionNote: trim.inspectionNote || '',
   };
@@ -692,9 +771,7 @@ onLoad((options: any) => {
   justify-content: space-between;
   align-items: center;
 }
-.ready-info {
-  flex: 1;
-}
+.ready-info { flex: 1; }
 .ready-title {
   font-size: 28rpx;
   font-weight: 600;
@@ -716,10 +793,7 @@ onLoad((options: any) => {
 }
 .fill-green { background: #1D9E75; }
 .fill-amber { background: #F0A93B; }
-.ready-text {
-  font-size: 24rpx;
-  color: #5F5E5A;
-}
+.ready-text { font-size: 24rpx; color: #5F5E5A; }
 .check-btn {
   padding: 12rpx 24rpx;
   background: #E6F1FB;
@@ -729,7 +803,7 @@ onLoad((options: any) => {
   flex-shrink: 0;
 }
 
-/* 辅料卡片 */
+/* 物料卡片 */
 .trim-header {
   display: flex;
   justify-content: space-between;
@@ -748,9 +822,7 @@ onLoad((options: any) => {
   font-weight: 600;
   color: #2C2C2A;
 }
-.trim-info {
-  margin-bottom: 16rpx;
-}
+.trim-info { margin-bottom: 16rpx; }
 .trim-section {
   margin-top: 16rpx;
   padding-top: 16rpx;
@@ -770,9 +842,10 @@ onLoad((options: any) => {
 .edit-btn {
   font-size: 24rpx;
   color: #185FA5;
-  padding: 6rpx 16rpx;
+  padding: 8rpx 20rpx;
   border: 1rpx solid #185FA5;
   border-radius: 8rpx;
+  line-height: 1.5;
 }
 
 /* 步骤条 */
@@ -797,14 +870,30 @@ onLoad((options: any) => {
   background: #E0E0E0;
 }
 .line-active { background: #185FA5; }
-.dates-row {
+
+/* 打样时间网格 */
+.dates-grid {
   display: flex;
-  gap: 20rpx;
-  margin-top: 8rpx;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin-top: 12rpx;
+  padding: 12rpx;
+  background: #F8F8F6;
+  border-radius: 8rpx;
 }
-.date-text {
-  font-size: 22rpx;
+.date-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4rpx;
+}
+.date-label {
+  font-size: 20rpx;
   color: #888780;
+}
+.date-val {
+  font-size: 24rpx;
+  color: #333333;
+  font-weight: 500;
 }
 .remark-text {
   font-size: 22rpx;
@@ -823,6 +912,7 @@ onLoad((options: any) => {
   display: flex;
   gap: 30rpx;
   margin-top: 12rpx;
+  flex-wrap: wrap;
 }
 .check-item {
   display: flex;
@@ -833,6 +923,11 @@ onLoad((options: any) => {
   font-size: 24rpx;
   color: #888780;
 }
+.check-date {
+  font-size: 20rpx;
+  color: #888780;
+  margin-left: 4rpx;
+}
 
 /* 信息行 */
 .info-row {
@@ -842,7 +937,7 @@ onLoad((options: any) => {
 }
 .info-label {
   color: #888780;
-  min-width: 120rpx;
+  min-width: 140rpx;
 }
 .info-value {
   color: #333333;
@@ -865,6 +960,9 @@ onLoad((options: any) => {
 .empty-action {
   font-size: 26rpx;
   color: #185FA5;
+  padding: 12rpx 24rpx;
+  border: 1rpx solid #185FA5;
+  border-radius: 8rpx;
 }
 
 /* 浮动按钮 */
@@ -913,6 +1011,7 @@ onLoad((options: any) => {
   align-items: center;
   padding: 24rpx;
   border-bottom: 1rpx solid #f0f0f0;
+  flex-shrink: 0;
 }
 .modal-title {
   font-size: 30rpx;
@@ -922,6 +1021,7 @@ onLoad((options: any) => {
 .modal-close {
   font-size: 32rpx;
   color: #B4B2A9;
+  padding: 8rpx 16rpx;
 }
 .modal-body {
   flex: 1;
@@ -933,6 +1033,7 @@ onLoad((options: any) => {
   gap: 20rpx;
   padding: 20rpx 24rpx;
   border-top: 1rpx solid #f0f0f0;
+  flex-shrink: 0;
 }
 
 /* 表单 */
@@ -958,6 +1059,7 @@ onLoad((options: any) => {
   font-size: 28rpx;
   color: #2C2C2A;
   border: 1rpx solid #E0E0E0;
+  box-sizing: border-box;
 }
 .form-textarea {
   width: 100%;
@@ -968,6 +1070,7 @@ onLoad((options: any) => {
   font-size: 28rpx;
   color: #2C2C2A;
   border: 1rpx solid #E0E0E0;
+  box-sizing: border-box;
 }
 .form-picker {
   display: flex;

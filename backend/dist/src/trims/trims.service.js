@@ -32,7 +32,9 @@ let TrimsService = class TrimsService {
         });
         if (!order)
             throw new common_1.NotFoundException('订单不存在');
-        const totalDemand = Math.ceil(dto.usagePerPiece * order.totalQty);
+        const totalDemand = dto.totalDemand && dto.totalDemand > 0
+            ? dto.totalDemand
+            : Math.ceil(dto.usagePerPiece * order.totalQty);
         const trim = await this.prisma.$transaction(async (tx) => {
             const newTrim = await tx.orderTrim.create({
                 data: {
@@ -83,6 +85,10 @@ let TrimsService = class TrimsService {
             updateData.samplingStatus = dto.samplingStatus;
             changes.push(`打样状态: ${trim.samplingStatus} → ${dto.samplingStatus}`);
         }
+        if (dto.samplingArrangeDate)
+            updateData.samplingArrangeDate = new Date(dto.samplingArrangeDate);
+        if (dto.samplingCompleteDate)
+            updateData.samplingCompleteDate = new Date(dto.samplingCompleteDate);
         if (dto.samplingSentDate)
             updateData.samplingSentDate = new Date(dto.samplingSentDate);
         if (dto.samplingApprovedDate)
@@ -97,6 +103,10 @@ let TrimsService = class TrimsService {
         }
         if (dto.bulkPoDate)
             updateData.bulkPoDate = new Date(dto.bulkPoDate);
+        if (dto.bulkPlanCompleteDate)
+            updateData.bulkPlanCompleteDate = new Date(dto.bulkPlanCompleteDate);
+        if (dto.bulkActualCompleteDate)
+            updateData.bulkActualCompleteDate = new Date(dto.bulkActualCompleteDate);
         if (dto.bulkEtd)
             updateData.bulkEtd = new Date(dto.bulkEtd);
         if (dto.bulkEta)
@@ -107,6 +117,8 @@ let TrimsService = class TrimsService {
             updateData.qtyCheckStatus = dto.qtyCheckStatus;
             changes.push(`数量清点: ${trim.qtyCheckStatus} → ${dto.qtyCheckStatus}`);
         }
+        if (dto.qtyCheckDate)
+            updateData.qtyCheckDate = new Date(dto.qtyCheckDate);
         if (dto.inspectionResult && dto.inspectionResult !== trim.inspectionResult) {
             updateData.inspectionResult = dto.inspectionResult;
             changes.push(`检验结果: ${trim.inspectionResult} → ${dto.inspectionResult}`);

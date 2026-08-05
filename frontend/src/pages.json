@@ -28,7 +28,13 @@
     {
       "path": "pages/trim-manage/index",
       "style": {
-        "navigationBarTitleText": "辅料管理"
+        "navigationBarTitleText": "物料管理"
+      }
+    },
+    {
+      "path": "pages/mine/index",
+      "style": {
+        "navigationBarTitleText": "我的"
       }
     }
   ],
@@ -49,8 +55,8 @@
         "text": "订单"
       },
       {
-        "pagePath": "pages/trim-manage/index",
-        "text": "辅料"
+        "pagePath": "pages/mine/index",
+        "text": "我的"
       }
     ]
   },
