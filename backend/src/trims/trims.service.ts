@@ -2,38 +2,65 @@ import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtPayload } from '../common/decorators/current-user.decorator';
 import { WebSocketGatewayImpl } from '../websocket/websocket.gateway';
+import { IsString, IsOptional, IsNumber } from 'class-validator';
 
 export class CreateTrimDto {
+  @IsString()
   trimName: string;
+  @IsString()
   trimCategory: string;
+  @IsOptional() @IsString()
   specification?: string;
+  @IsNumber()
   usagePerPiece: number;
+  @IsOptional() @IsString()
   unit?: string;
+  @IsOptional() @IsNumber()
   totalDemand?: number;
+  @IsOptional() @IsNumber()
   supplierId?: number;
+  @IsOptional() @IsString()
   remark?: string;
 }
 
 export class UpdateTrimStatusDto {
   // 打样阶段
+  @IsOptional() @IsString()
   samplingStatus?: string;
+  @IsOptional() @IsString()
   samplingArrangeDate?: string;
+  @IsOptional() @IsString()
   samplingCompleteDate?: string;
+  @IsOptional() @IsString()
   samplingSentDate?: string;
+  @IsOptional() @IsString()
   samplingApprovedDate?: string;
+  @IsOptional() @IsString()
   samplingRemark?: string;
   // 大货阶段
+  @IsOptional() @IsString()
   bulkPoNo?: string;
+  @IsOptional() @IsString()
   bulkPoStatus?: string;
+  @IsOptional() @IsString()
   bulkPoDate?: string;
+  @IsOptional() @IsString()
   bulkPlanCompleteDate?: string;
+  @IsOptional() @IsString()
   bulkActualCompleteDate?: string;
+  @IsOptional() @IsString()
   bulkEtd?: string;
+  @IsOptional() @IsString()
   bulkEta?: string;
+  @IsOptional() @IsNumber()
   receivedQty?: number;
+  @IsOptional() @IsString()
   qtyCheckStatus?: string;
+  @IsOptional() @IsString()
   qtyCheckDate?: string;
+  @IsOptional() @IsString()
   inspectionResult?: string;
+  @IsOptional() @IsString()
   inspectionNote?: string;
 }
 
