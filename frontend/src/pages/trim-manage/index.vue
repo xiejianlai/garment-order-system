@@ -456,6 +456,7 @@ const supplierOptions = ref<any[]>([]);
 
 // 状态映射
 const TRIM_CATEGORY_LABELS: Record<string, string> = {
+  fabric: '面料',
   label: '唛头',
   zipper: '拉链',
   button: '纽扣',
