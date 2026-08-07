@@ -8,18 +8,24 @@ onLaunch(() => {
   console.log('App Launch — 外贸服装订单系统');
 
   // 检查登录状态 — 小程序和H5共用
+  // login/index 是 pages.json 中的首页，app 启动时已经自动加载
+  // 只在有 token 时跳转，无 token 时不需要 reLaunch（避免生命周期冲突）
   const token = uni.getStorageSync('token');
   if (token) {
-    // 有token时验证并恢复用户信息
-    userStore.fetchCurrentUser().catch(() => {
-      // token失效，跳转登录
-      userStore.logout();
-      uni.reLaunch({ url: '/pages/login/index' });
-    });
-  } else {
-    // 无token，跳转登录
-    uni.reLaunch({ url: '/pages/login/index' });
+    // 有token时验证并恢复用户信息，成功则跳转订单列表
+    userStore.fetchCurrentUser()
+      .then(() => {
+        // 延迟跳转，等当前页面生命周期完成
+        setTimeout(() => {
+          uni.switchTab({ url: '/pages/orders/index' });
+        }, 100);
+      })
+      .catch(() => {
+        // token失效，清除并留在登录页
+        userStore.logout();
+      });
   }
+  // 无token时不需要做任何操作，login/index 已经是首页
 });
 
 onShow(() => {
