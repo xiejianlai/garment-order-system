@@ -90,8 +90,14 @@
       </view>
 
       <!-- 空状态 -->
-      <view v-if="orders.length === 0 && !loading" class="empty-state">
+      <view v-if="orders.length === 0 && !loading && !loadError" class="empty-state">
         <text class="empty-text">暂无订单</text>
+      </view>
+
+      <!-- 错误状态 -->
+      <view v-if="loadError && orders.length === 0" class="empty-state">
+        <text class="empty-text">{{ loadError }}</text>
+        <view class="retry-btn" @tap="loadOrders(true)"><text>点击重试</text></view>
       </view>
 
       <!-- 加载更多 -->
@@ -107,7 +113,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue';
-import { onShow, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
+import { onShow, onLoad, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
 import { useUserStore } from '../../stores/user';
 import { getOrders } from '../../api/orders';
 import { ORDER_STATUS_LABELS } from '../../types';
@@ -121,6 +127,7 @@ const noMore = ref(false);
 const currentPage = ref(1);
 const pageLimit = 20;
 const currentStatus = ref<string>('');
+const loadError = ref(''); // 错误信息（可见状态）
 
 const statusTabs = [
   { label: '全部', value: '' },
@@ -140,6 +147,7 @@ async function loadOrders(reset = false) {
   if (noMore.value) return;
 
   loading.value = true;
+  loadError.value = '';
   try {
     const result = await getOrders({
       page: currentPage.value,
@@ -147,15 +155,16 @@ async function loadOrders(reset = false) {
       status: currentStatus.value || undefined,
     });
     if (reset) {
-      orders.value = result.list;
+      orders.value = result.list || [];
     } else {
-      orders.value.push(...result.list);
+      orders.value.push(...(result.list || []));
     }
-    if (result.list.length < pageLimit) {
+    if (!result.list || result.list.length < pageLimit) {
       noMore.value = true;
     }
   } catch (err: any) {
     console.error('加载订单失败:', err.message);
+    loadError.value = err.message || '加载失败，请下拉刷新重试';
   } finally {
     loading.value = false;
   }
@@ -236,8 +245,14 @@ function onOrderCreated() {
   loadOrders(true);
 }
 
+// onLoad: 页面首次加载时触发，确保数据加载
+onLoad(() => {
+  loadOrders(true);
+});
+
 onShow(() => {
   // 页面显示时刷新列表（从详情页返回时也能看到最新状态）
+  // 首次加载时 onLoad 已触发，onShow 也会触发但 loading guard 会防重复
   loadOrders(true);
 });
 
@@ -390,6 +405,15 @@ onUnmounted(() => {
 .empty-text {
   font-size: 28rpx;
   color: #B4B2A9;
+}
+
+.retry-btn {
+  margin-top: 20rpx;
+  padding: 12rpx 40rpx;
+  background: #185FA5;
+  color: #fff;
+  border-radius: 8rpx;
+  font-size: 26rpx;
 }
 
 .loading-more {

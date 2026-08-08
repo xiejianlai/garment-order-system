@@ -9,20 +9,27 @@ onLaunch(() => {
 
   // 检查登录状态 — 小程序和H5共用
   // login/index 是 pages.json 中的首页，app 启动时已经自动加载
-  // 只在有 token 时跳转，无 token 时不需要 reLaunch（避免生命周期冲突）
   const token = uni.getStorageSync('token');
   if (token) {
-    // 有token时验证并恢复用户信息，成功则跳转订单列表
+    // 记录当前 token，防止与用户手动登录产生竞态
+    const tokenAtLaunch = token;
     userStore.fetchCurrentUser()
       .then(() => {
-        // 延迟跳转，等当前页面生命周期完成
-        setTimeout(() => {
-          uni.switchTab({ url: '/pages/orders/index' });
-        }, 100);
+        // 仅当 token 没有被用户重新登录覆盖时才跳转
+        if (uni.getStorageSync('token') === tokenAtLaunch) {
+          setTimeout(() => {
+            uni.switchTab({ url: '/pages/orders/index' });
+          }, 100);
+        }
       })
       .catch(() => {
-        // token失效，清除并留在登录页
-        userStore.logout();
+        // 仅当 token 没有被用户重新登录覆盖时才清除
+        if (uni.getStorageSync('token') === tokenAtLaunch) {
+          // token失效，静默清除（不调用 logout 避免 reLaunch 冲突）
+          uni.removeStorageSync('token');
+          uni.removeStorageSync('userInfo');
+          userStore.userInfo = null;
+        }
       });
   }
   // 无token时不需要做任何操作，login/index 已经是首页
