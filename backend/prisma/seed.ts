@@ -4,22 +4,18 @@ import * as bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('开始种子数据初始化...');
+  console.log('检查是否需要种子数据...');
 
-  // 清理旧数据（按依赖顺序删除）
-  console.log('清理旧数据...');
-  await prisma.operationLog.deleteMany();
-  await prisma.orderFile.deleteMany();
-  await prisma.orderTaStage.deleteMany();
-  await prisma.orderTrim.deleteMany();
-  await prisma.orderFabric.deleteMany();
-  await prisma.orderColorSize.deleteMany();
-  await prisma.order.deleteMany();
-  await prisma.customer.deleteMany();
-  await prisma.factory.deleteMany();
-  await prisma.sysUser.deleteMany();
-  await prisma.company.deleteMany();
-  console.log('旧数据已清理');
+  // 检查是否已有数据 — 如果已有公司记录，跳过种子（防止每次冷启动都清空用户数据）
+  const existingCompany = await prisma.company.findFirst({
+    where: { code: 'DEMO01' },
+  });
+  if (existingCompany) {
+    console.log('数据库已有数据，跳过种子初始化（保护用户数据）');
+    return;
+  }
+
+  console.log('数据库为空，开始种子数据初始化...');
 
   const passwordHash = await bcrypt.hash('123456', 10);
   const avatarColors = ['#1677ff', '#13c2c2', '#52c41a', '#722ed1', '#fa8c16', '#eb2f96', '#08979c', '#389e0d', '#5cdbd3', '#b7eb8f'];
