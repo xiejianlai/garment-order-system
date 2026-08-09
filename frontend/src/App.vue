@@ -1,38 +1,11 @@
 <script setup lang="ts">
 import { onLaunch, onShow } from '@dcloudio/uni-app';
-import { useUserStore } from './stores/user';
-
-const userStore = useUserStore();
 
 onLaunch(() => {
   console.log('App Launch — 外贸服装订单系统');
-
-  // 检查登录状态 — 小程序和H5共用
-  // login/index 是 pages.json 中的首页，app 启动时已经自动加载
-  const token = uni.getStorageSync('token');
-  if (token) {
-    // 记录当前 token，防止与用户手动登录产生竞态
-    const tokenAtLaunch = token;
-    userStore.fetchCurrentUser()
-      .then(() => {
-        // 仅当 token 没有被用户重新登录覆盖时才跳转
-        if (uni.getStorageSync('token') === tokenAtLaunch) {
-          setTimeout(() => {
-            uni.switchTab({ url: '/pages/orders/index' });
-          }, 100);
-        }
-      })
-      .catch(() => {
-        // 仅当 token 没有被用户重新登录覆盖时才清除
-        if (uni.getStorageSync('token') === tokenAtLaunch) {
-          // token失效，静默清除（不调用 logout 避免 reLaunch 冲突）
-          uni.removeStorageSync('token');
-          uni.removeStorageSync('userInfo');
-          userStore.userInfo = null;
-        }
-      });
-  }
-  // 无token时不需要做任何操作，login/index 已经是首页
+  // 不在 onLaunch 中做任何 token 检查或跳转
+  // login/index 是 pages.json 首页，由它自己的 onLoad 处理 token 检查
+  // 避免 reLaunch/switchTab 与页面生命周期冲突
 });
 
 onShow(() => {

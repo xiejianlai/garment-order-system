@@ -85,15 +85,20 @@ export function request<T = any>(options: RequestOptions): Promise<T> {
         // HTTP 状态码处理
         if (res.statusCode === 401) {
           // 登录/注册接口的 401 是凭证错误，不是 token 过期，直接抛错不跳转
-          const isAuthEndpoint = url.startsWith('/auth/login') || url.startsWith('/auth/wx-login') || url.startsWith('/auth/register');
+          const isAuthEndpoint = url.startsWith('/auth/login') || url.startsWith('/auth/wx-login') || url.startsWith('/auth/register') || url.startsWith('/auth/me');
           if (!isAuthEndpoint) {
             // Token 失效
             removeToken();
             removeUserInfo();
             uni.showToast({ title: '登录已过期，请重新登录', icon: 'none' });
-            setTimeout(() => {
-              uni.reLaunch({ url: '/pages/login/index' });
-            }, 1500);
+            // 获取当前页面，避免在登录页上 reLaunch 导致生命周期冲突
+            const pages = getCurrentPages();
+            const currentRoute = pages.length > 0 ? pages[pages.length - 1].route : '';
+            if (currentRoute !== 'pages/login/index') {
+              setTimeout(() => {
+                uni.reLaunch({ url: '/pages/login/index' });
+              }, 1500);
+            }
           }
           const errMsg = responseData?.message || '未授权';
           if (showError && isAuthEndpoint) {

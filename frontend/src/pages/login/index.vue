@@ -139,7 +139,9 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue';
+import { onLoad } from '@dcloudio/uni-app';
 import { useUserStore } from '../../stores/user';
+import { getToken } from '../../utils/auth';
 
 const userStore = useUserStore();
 const loading = ref(false);
@@ -151,6 +153,29 @@ const formData = reactive({
   username: '',
   password: '',
   companyCode: '',
+});
+
+/** 页面加载时检查是否已有有效 token */
+onLoad(() => {
+  const token = getToken();
+  if (!token) return; // 无 token，留在登录页
+
+  // 有 token，尝试验证。成功则跳转，失败则留在登录页
+  userStore.fetchCurrentUser()
+    .then(() => {
+      // token 有效，跳转订单列表
+      uni.switchTab({
+        url: '/pages/orders/index',
+        fail: () => {
+          // switchTab 失败可能是因为已经在该页面或页面未注册
+          console.log('已登录，跳转订单列表');
+        }
+      });
+    })
+    .catch(() => {
+      // token 失效，静默清除（request.ts 的 401 拦截器已处理清除和提示）
+      // 不在这里做 reLaunch，避免生命周期冲突
+    });
 });
 
 /**
