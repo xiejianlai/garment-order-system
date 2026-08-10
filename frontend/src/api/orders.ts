@@ -30,7 +30,17 @@ export interface CreateOrderPayload {
 
 /** 获取订单列表 */
 export function getOrders(params?: { page?: number; limit?: number; status?: string }) {
-  return http.get<OrderListResult>('/orders', { data: params });
+  // 过滤掉 undefined/null 值，避免小程序请求序列化问题
+  const cleanParams: Record<string, any> = {};
+  if (params) {
+    Object.keys(params).forEach(key => {
+      const val = (params as any)[key];
+      if (val !== undefined && val !== null && val !== '') {
+        cleanParams[key] = val;
+      }
+    });
+  }
+  return http.get<OrderListResult>('/orders', { data: cleanParams });
 }
 
 /** 获取订单详情 */

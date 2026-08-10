@@ -16,9 +16,9 @@
       </view>
       <view class="header-right">
         <view v-if="userStore.isAdmin" class="create-btn" @tap="goCreate"><text>+ 新建</text></view>
+        <view class="refresh-btn" @tap="forceRefresh"><text>刷新</text></view>
         <view @tap="handleLogout">
           <text class="user-name">{{ userStore.userInfo?.realName }}</text>
-          <text class="user-role tag tag-blue">{{ userStore.roleLabel }}</text>
         </view>
       </view>
     </view>
@@ -36,10 +36,16 @@
       </view>
     </scroll-view>
 
-    <!-- 订单列表 -->
+    <!-- 调试信息栏 (可见) -->
+    <view class="debug-bar">
+      <text class="debug-text">状态: {{ debugStatus }} | 数量: {{ orders.length }}</text>
+    </view>
+
+    <!-- 订单列表 — 使用明确高度而非flex:1 -->
     <scroll-view
       scroll-y
       class="order-list"
+      :style="{ height: scrollHeight }"
       refresher-enabled
       :refresher-triggered="refreshing"
       @refresherrefresh="onRefresh"
@@ -55,7 +61,7 @@
         <view class="order-header">
           <text class="order-no">{{ order.orderNo }}</text>
           <text class="tag" :class="getStatusTagClass(order.orderStatus)">
-            {{ ORDER_STATUS_LABELS[order.orderStatus] }}
+            {{ ORDER_STATUS_LABELS[order.orderStatus] || order.orderStatus }}
           </text>
         </view>
 
@@ -73,11 +79,11 @@
           </view>
           <view class="order-info-row">
             <text class="info-label">客户:</text>
-            <text class="info-value">{{ order.customer?.customerName || '-' }}</text>
+            <text class="info-value">{{ order.customer?.customerName || order.customerName || '-' }}</text>
           </view>
           <view class="order-info-row">
             <text class="info-label">工厂:</text>
-            <text class="info-value">{{ order.assignedFactory?.factoryName || '未分配' }}</text>
+            <text class="info-value">{{ order.assignedFactory?.factoryName || order.factoryName || '未分配' }}</text>
           </view>
           <view class="order-info-row">
             <text class="info-label">交期:</text>
@@ -91,18 +97,18 @@
 
       <!-- 空状态 -->
       <view v-if="orders.length === 0 && !loading && !loadError" class="empty-state">
-        <text class="empty-text">暂无订单</text>
+        <text class="empty-text">暂无订单，点击右上角"刷新"重试</text>
       </view>
 
       <!-- 错误状态 -->
       <view v-if="loadError && orders.length === 0" class="empty-state">
-        <text class="empty-text">{{ loadError }}</text>
-        <view class="retry-btn" @tap="loadOrders(true)"><text>点击重试</text></view>
+        <text class="empty-text">加载失败: {{ loadError }}</text>
+        <view class="retry-btn" @tap="forceRefresh"><text>点击重试</text></view>
       </view>
 
-      <!-- 加载更多 -->
+      <!-- 加载中 -->
       <view v-if="loading" class="loading-more">
-        <text class="loading-text">加载中...</text>
+        <text class="loading-text">加载中...请稍候</text>
       </view>
       <view v-if="noMore && orders.length > 0" class="loading-more">
         <text class="loading-text">没有更多了</text>
@@ -112,8 +118,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import { onShow, onLoad, onPullDownRefresh, onReachBottom } from '@dcloudio/uni-app';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { onShow, onLoad } from '@dcloudio/uni-app';
 import { useUserStore } from '../../stores/user';
 import { getOrders } from '../../api/orders';
 import { ORDER_STATUS_LABELS } from '../../types';
@@ -127,7 +133,15 @@ const noMore = ref(false);
 const currentPage = ref(1);
 const pageLimit = 20;
 const currentStatus = ref<string>('');
-const loadError = ref(''); // 错误信息（可见状态）
+const loadError = ref('');
+const debugStatus = ref('初始化');
+const requestSeq = ref(0); // 请求序号，防止竞态
+
+// scroll-view 高度：100vh - header(60rpx) - tabs(60rpx) - debug(40rpx)
+// 在小程序中 flex:1 对 scroll-view 不可靠，必须用明确高度
+const scrollHeight = computed(() => {
+  return 'calc(100vh - 180rpx)';
+});
 
 const statusTabs = [
   { label: '全部', value: '' },
@@ -137,37 +151,70 @@ const statusTabs = [
   { label: '已完成', value: 'completed' },
 ];
 
-/** 加载订单列表 */
+/** 加载订单列表 — reset=true 时强制刷新，不受 loading guard 限制 */
 async function loadOrders(reset = false) {
-  if (loading.value) return;
+  // reset 时强制刷新：即使上一个请求还在进行，也发起新请求
+  if (!reset && loading.value) return;
+  if (!reset && noMore.value) return;
+
   if (reset) {
     currentPage.value = 1;
     noMore.value = false;
   }
-  if (noMore.value) return;
 
+  const seq = ++requestSeq.value;
   loading.value = true;
   loadError.value = '';
+  debugStatus.value = '正在请求...';
+
   try {
-    const result = await getOrders({
+    const params: any = {
       page: currentPage.value,
       limit: pageLimit,
-      status: currentStatus.value || undefined,
-    });
-    if (reset) {
-      orders.value = result.list || [];
-    } else {
-      orders.value.push(...(result.list || []));
+    };
+    if (currentStatus.value) {
+      params.status = currentStatus.value;
     }
-    if (!result.list || result.list.length < pageLimit) {
+
+    console.log('[Orders] 发起请求:', params);
+    const result = await getOrders(params);
+    console.log('[Orders] 收到响应:', result);
+
+    // 检查是否是最新请求（防止竞态）
+    if (seq !== requestSeq.value) {
+      console.log('[Orders] 丢弃过期响应');
+      return;
+    }
+
+    const list = result.list || [];
+    if (reset) {
+      orders.value = list;
+    } else {
+      orders.value.push(...list);
+    }
+    if (list.length < pageLimit) {
       noMore.value = true;
     }
+
+    debugStatus.value = `成功(${list.length}条)`;
+    console.log('[Orders] 加载成功, 共', list.length, '条, 当前列表:', orders.value.length, '条');
   } catch (err: any) {
-    console.error('加载订单失败:', err.message);
-    loadError.value = err.message || '加载失败，请下拉刷新重试';
+    console.error('[Orders] 加载失败:', err);
+    if (seq === requestSeq.value) {
+      loadError.value = err.message || '网络请求失败';
+      debugStatus.value = '失败: ' + (err.message || '未知错误');
+    }
   } finally {
-    loading.value = false;
+    if (seq === requestSeq.value) {
+      loading.value = false;
+    }
   }
+}
+
+/** 强制刷新（用户手动点击） */
+function forceRefresh() {
+  console.log('[Orders] 手动刷新');
+  loadOrders(true);
 }
 
 /** 切换状态筛选 */
@@ -224,7 +271,7 @@ function formatDate(dateStr: string): string {
 /** 判断是否逾期 */
 function isOverdue(dateStr: string): boolean {
   if (!dateStr) return false;
-  return new Date(dateStr) < new Date() ;
+  return new Date(dateStr) < new Date();
 }
 
 /** 状态标签样式 */
@@ -240,23 +287,26 @@ function getStatusTagClass(status: OrderStatus): string {
   return map[status] || 'tag-gray';
 }
 
-/** 从创建页返回时强制刷新（事件机制，比 onShow 更可靠） */
+/** 从创建页返回时强制刷新 */
 function onOrderCreated() {
+  console.log('[Orders] 收到 orderCreated 事件，刷新列表');
   loadOrders(true);
 }
 
-// onLoad: 页面首次加载时触发，确保数据加载
+// 页面首次加载
 onLoad(() => {
+  console.log('[Orders] onLoad');
   loadOrders(true);
 });
 
+// 页面每次显示（包括从其他页面返回）
 onShow(() => {
-  // 页面显示时刷新列表（从详情页返回时也能看到最新状态）
-  // 首次加载时 onLoad 已触发，onShow 也会触发但 loading guard 会防重复
+  console.log('[Orders] onShow');
   loadOrders(true);
 });
 
 onMounted(() => {
+  console.log('[Orders] onMounted, 注册 orderCreated 事件');
   uni.$on('orderCreated', onOrderCreated);
 });
 
@@ -277,9 +327,14 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20rpx 30rpx;
+  padding: 16rpx 30rpx;
   background: #ffffff;
   border-bottom: 1rpx solid #e0e0e0;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
 }
 
 .header-title {
@@ -291,7 +346,7 @@ onUnmounted(() => {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 20rpx;
+  gap: 16rpx;
 }
 
 .create-btn {
@@ -302,10 +357,12 @@ onUnmounted(() => {
   border-radius: 8rpx;
 }
 
-.header-right > view {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
+.refresh-btn {
+  font-size: 26rpx;
+  color: #fff;
+  padding: 8rpx 20rpx;
+  background: #185FA5;
+  border-radius: 8rpx;
 }
 
 .user-name {
@@ -317,13 +374,13 @@ onUnmounted(() => {
   display: flex;
   white-space: nowrap;
   background: #ffffff;
-  padding: 16rpx 20rpx;
+  padding: 12rpx 20rpx;
   border-bottom: 1rpx solid #e0e0e0;
 }
 
 .tab-item {
   display: inline-block;
-  padding: 12rpx 28rpx;
+  padding: 10rpx 28rpx;
   margin-right: 12rpx;
   border-radius: 8rpx;
   font-size: 26rpx;
@@ -336,8 +393,18 @@ onUnmounted(() => {
   color: #ffffff;
 }
 
+.debug-bar {
+  padding: 6rpx 20rpx;
+  background: #FFF8E1;
+  border-bottom: 1rpx solid #FFE082;
+}
+
+.debug-text {
+  font-size: 22rpx;
+  color: #854F0B;
+}
+
 .order-list {
-  flex: 1;
   padding: 20rpx;
 }
 
@@ -398,6 +465,8 @@ onUnmounted(() => {
 
 .empty-state {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
   padding: 100rpx 0;
 }
