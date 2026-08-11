@@ -124,6 +124,7 @@ import { useUserStore } from '../../stores/user';
 import { getOrders } from '../../api/orders';
 import { ORDER_STATUS_LABELS } from '../../types';
 import type { OrderListItem, OrderStatus } from '../../types';
+import { getToken } from '../../utils/auth';
 
 const userStore = useUserStore();
 const orders = ref<OrderListItem[]>([]);
@@ -136,6 +137,7 @@ const currentStatus = ref<string>('');
 const loadError = ref('');
 const debugStatus = ref('初始化');
 const requestSeq = ref(0); // 请求序号，防止竞态
+let hasLoaded = false; // 防止 onLoad + onShow 双重调用
 
 // scroll-view 高度：100vh - header(60rpx) - tabs(60rpx) - debug(40rpx)
 // 在小程序中 flex:1 对 scroll-view 不可靠，必须用明确高度
@@ -153,6 +155,15 @@ const statusTabs = [
 
 /** 加载订单列表 — reset=true 时强制刷新，不受 loading guard 限制 */
 async function loadOrders(reset = false) {
+  // 前置检查：无 token 不发请求，直接跳登录
+  const token = getToken();
+  if (!token) {
+    debugStatus.value = '无token，跳转登录';
+    console.log('[Orders] 无token，跳转登录页');
+    uni.reLaunch({ url: '/pages/login/index' });
+    return;
+  }
+
   // reset 时强制刷新：即使上一个请求还在进行，也发起新请求
   if (!reset && loading.value) return;
   if (!reset && noMore.value) return;
@@ -296,12 +307,18 @@ function onOrderCreated() {
 // 页面首次加载
 onLoad(() => {
   console.log('[Orders] onLoad');
+  hasLoaded = true;
   loadOrders(true);
 });
 
 // 页面每次显示（包括从其他页面返回）
+// 首次加载时 onShow 会在 onLoad 之后立即触发，用 hasLoaded 标志跳过
 onShow(() => {
-  console.log('[Orders] onShow');
+  console.log('[Orders] onShow, hasLoaded =', hasLoaded);
+  if (hasLoaded) {
+    hasLoaded = false; // 重置，后续 onShow 正常触发
+    return;
+  }
   loadOrders(true);
 });
 
