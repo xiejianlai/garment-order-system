@@ -11,6 +11,11 @@
 -->
 <template>
   <view class="create-page">
+    <!-- 调试状态栏 -->
+    <view class="debug-bar">
+      <text class="debug-text">Token: {{ tokenStatus }} | 选项: {{ optionsStatus }} | 提交: {{ submitStatus }}</text>
+    </view>
+
     <!-- ========== 订单基本信息 ========== -->
     <view class="card">
       <view class="card-title">订单基本信息</view>
@@ -312,7 +317,23 @@
 import { ref, reactive, computed } from 'vue';
 import { createOrder, getOrderOptions } from '../../api/orders';
 import { uploadFile } from '../../utils/request';
+import { getToken } from '../../utils/auth';
 import type { CreateOrderPayload } from '../../api/orders';
+
+// 调试状态
+const tokenStatus = ref('检查中...');
+const optionsStatus = ref('加载中...');
+const submitStatus = ref('就绪');
+
+// 初始化时检查 token
+const initToken = getToken();
+if (initToken) {
+  tokenStatus.value = '有效(' + initToken.substring(0, 8) + '...)';
+  console.log('[CreateOrder] Token OK');
+} else {
+  tokenStatus.value = '无效!';
+  console.warn('[CreateOrder] 无Token!');
+}
 
 // 表单数据
 const form = reactive({
@@ -397,6 +418,8 @@ async function loadOptions() {
     options.factories = res.factories || [];
     options.coordinators = res.coordinators || [];
     options.merchandisers = res.merchandisers || [];
+    optionsStatus.value = `OK(客${options.customers.length}/厂${options.factories.length}/理${options.coordinators.length})`;
+    console.log('[CreateOrder] 选项加载成功:', optionsStatus.value);
     // 后端返回的也加入本地缓存显示
     options.factories.forEach((f) => {
       if (!localFactories.value.includes(f.name)) localFactories.value.push(f.name);
@@ -407,8 +430,9 @@ async function loadOptions() {
     options.merchandisers.forEach((m) => {
       if (!localMerchandisers.value.includes(m.name)) localMerchandisers.value.push(m.name);
     });
-  } catch (err) {
-    console.error('加载选项数据失败:', err);
+  } catch (err: any) {
+    optionsStatus.value = '失败: ' + (err.message || '未知');
+    console.error('[CreateOrder] 加载选项数据失败:', err);
   }
 }
 loadLocalOptions();
@@ -557,6 +581,7 @@ async function handleSubmit() {
   }
 
   submitting.value = true;
+  submitStatus.value = '提交中...';
   try {
     const colorSizes: any[] = [];
     colors.value.forEach((color, colorIdx) => {
@@ -589,7 +614,10 @@ async function handleSubmit() {
       remark: form.remark.trim() || undefined,
     };
 
-    await createOrder(payload);
+    console.log('[CreateOrder] 准备提交:', JSON.stringify(payload).substring(0, 200));
+    const result = await createOrder(payload);
+    console.log('[CreateOrder] 创建成功:', result);
+    submitStatus.value = '成功!';
 
     // 自动记忆新输入的值
     if (form.category.trim()) saveLocalOption('local_categories', localCategories.value, form.category);
@@ -604,7 +632,9 @@ async function handleSubmit() {
       uni.navigateBack();
     }, 1500);
   } catch (err: any) {
-    uni.showToast({ title: '创建失败: ' + err.message, icon: 'none' });
+    submitStatus.value = '失败: ' + (err.message || '未知');
+    console.error('[CreateOrder] 创建失败:', err);
+    uni.showToast({ title: '创建失败: ' + (err.message || '未知错误'), icon: 'none', duration: 3000 });
   } finally {
     submitting.value = false;
   }
@@ -620,6 +650,17 @@ function handleCancel() {
   min-height: 100vh;
   background: #f5f5f5;
   padding-bottom: 140rpx;
+}
+
+.debug-bar {
+  padding: 6rpx 20rpx;
+  background: #FFF8E1;
+  border-bottom: 1rpx solid #FFE082;
+}
+
+.debug-text {
+  font-size: 20rpx;
+  color: #854F0B;
 }
 
 .card {
