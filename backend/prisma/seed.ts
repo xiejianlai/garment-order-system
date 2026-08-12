@@ -11,7 +11,12 @@ async function main() {
     where: { code: 'DEMO01' },
   });
   if (existingCompany) {
-    console.log('数据库已有数据，跳过种子初始化（保护用户数据）');
+    // 幂等回填：保证演示公司是正式版（不受试用期限制）
+    await prisma.company.updateMany({
+      where: { code: 'DEMO01' },
+      data: { plan: 'ACTIVE' },
+    });
+    console.log('数据库已有数据，跳过种子初始化（保护用户数据）；DEMO01 已设为正式版');
     return;
   }
 
@@ -20,11 +25,12 @@ async function main() {
   const passwordHash = await bcrypt.hash('123456', 10);
   const avatarColors = ['#1677ff', '#13c2c2', '#52c41a', '#722ed1', '#fa8c16', '#eb2f96', '#08979c', '#389e0d', '#5cdbd3', '#b7eb8f'];
 
-  // 1. 创建演示公司
+  // 1. 创建演示公司（演示公司为正式版）
   const company = await prisma.company.create({
     data: {
       code: 'DEMO01',
       name: '演示贸易公司',
+      plan: 'ACTIVE',
     },
   });
   console.log(`公司创建: ${company.code} - ${company.name}`);

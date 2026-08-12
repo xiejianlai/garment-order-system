@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser, JwtPayload } from '../common/decorators/current-user.decorator';
 import { CompanyService } from './company.service';
-import { AddMemberDto, UpdateMemberDto, QuickRegisterDto } from './dto/company.dto';
+import { AddMemberDto, UpdateMemberDto, QuickRegisterDto, ExtendTrialDto } from './dto/company.dto';
 
 @ApiTags('公司/团队 Company')
 @Controller('company')
@@ -44,5 +44,17 @@ export class CompanyController {
   @ApiOperation({ summary: '删除成员（管理员）' })
   async deleteMember(@CurrentUser() user: JwtPayload, @Param('id') memberId: string) {
     return this.companyService.deleteMember(user.companyId, user.userId, Number(memberId));
+  }
+
+  @Post('extend-trial')
+  @ApiOperation({ summary: '试用续期（管理员）' })
+  async extendTrial(@CurrentUser() user: JwtPayload, @Body() dto: ExtendTrialDto) {
+    return this.companyService.extendTrial(user.companyId, user.userId, dto.days);
+  }
+
+  @Post('activate')
+  @ApiOperation({ summary: '开通正式版（管理员）' })
+  async activate(@CurrentUser() user: JwtPayload) {
+    return this.companyService.activateCompany(user.companyId, user.userId);
   }
 }

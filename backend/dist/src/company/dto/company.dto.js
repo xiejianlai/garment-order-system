@@ -9,8 +9,9 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.QuickRegisterDto = exports.UpdateMemberDto = exports.AddMemberDto = void 0;
+exports.ExtendTrialDto = exports.QuickRegisterDto = exports.UpdateMemberDto = exports.AddMemberDto = void 0;
 const class_validator_1 = require("class-validator");
+const class_transformer_1 = require("class-transformer");
 class AddMemberDto {
 }
 exports.AddMemberDto = AddMemberDto;
@@ -39,6 +40,12 @@ __decorate([
     (0, class_validator_1.IsEnum)(['admin', 'coordinator', 'merchandiser', 'customer'], { message: '角色必须是 admin/coordinator/merchandiser/customer' }),
     __metadata("design:type", String)
 ], AddMemberDto.prototype, "role", void 0);
+__decorate([
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], AddMemberDto.prototype, "teamId", void 0);
 class UpdateMemberDto {
 }
 exports.UpdateMemberDto = UpdateMemberDto;
@@ -54,7 +61,7 @@ __decorate([
 ], UpdateMemberDto.prototype, "username", void 0);
 __decorate([
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
 ], UpdateMemberDto.prototype, "password", void 0);
 __decorate([
@@ -70,6 +77,12 @@ __decorate([
     (0, class_validator_1.IsEnum)(['active', 'disabled']),
     __metadata("design:type", String)
 ], UpdateMemberDto.prototype, "status", void 0);
+__decorate([
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], UpdateMemberDto.prototype, "teamId", void 0);
 class QuickRegisterDto {
 }
 exports.QuickRegisterDto = QuickRegisterDto;
@@ -98,4 +111,20 @@ __decorate([
     (0, class_validator_1.IsEnum)(['coordinator', 'merchandiser']),
     __metadata("design:type", String)
 ], QuickRegisterDto.prototype, "role", void 0);
+__decorate([
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], QuickRegisterDto.prototype, "teamId", void 0);
+class ExtendTrialDto {
+}
+exports.ExtendTrialDto = ExtendTrialDto;
+__decorate([
+    (0, class_validator_1.IsInt)(),
+    (0, class_validator_1.IsNotEmpty)({ message: '续期天数不能为空' }),
+    (0, class_validator_1.Min)(1, { message: '续期天数至少1天' }),
+    (0, class_transformer_1.Type)(() => Number),
+    __metadata("design:type", Number)
+], ExtendTrialDto.prototype, "days", void 0);
 //# sourceMappingURL=company.dto.js.map

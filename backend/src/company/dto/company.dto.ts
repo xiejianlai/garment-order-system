@@ -1,4 +1,5 @@
-import { IsString, IsNotEmpty, IsOptional, MinLength, IsEnum } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, MinLength, IsEnum, IsInt, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class AddMemberDto {
   @IsString()
@@ -20,6 +21,11 @@ export class AddMemberDto {
 
   @IsEnum(['admin', 'coordinator', 'merchandiser', 'customer'], { message: '角色必须是 admin/coordinator/merchandiser/customer' })
   role: string;
+
+  @IsInt()
+  @IsOptional()
+  @Type(() => Number)
+  teamId?: number;
 }
 
 export class UpdateMemberDto {
@@ -32,8 +38,8 @@ export class UpdateMemberDto {
   username: string;
 
   @IsString()
-  @IsNotEmpty()
-  password: string;
+  @IsOptional()
+  password?: string;
 
   @IsString()
   @IsOptional()
@@ -44,6 +50,11 @@ export class UpdateMemberDto {
 
   @IsEnum(['active', 'disabled'])
   status: string;
+
+  @IsInt()
+  @IsOptional()
+  @Type(() => Number)
+  teamId?: number;
 }
 
 export class QuickRegisterDto {
@@ -66,4 +77,17 @@ export class QuickRegisterDto {
 
   @IsEnum(['coordinator', 'merchandiser'])
   role: string;
+
+  @IsInt()
+  @IsOptional()
+  @Type(() => Number)
+  teamId?: number;
+}
+
+export class ExtendTrialDto {
+  @IsInt()
+  @IsNotEmpty({ message: '续期天数不能为空' })
+  @Min(1, { message: '续期天数至少1天' })
+  @Type(() => Number)
+  days: number;
 }

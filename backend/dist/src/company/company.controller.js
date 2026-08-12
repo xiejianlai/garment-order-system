@@ -38,6 +38,12 @@ let CompanyController = class CompanyController {
     async deleteMember(user, memberId) {
         return this.companyService.deleteMember(user.companyId, user.userId, Number(memberId));
     }
+    async extendTrial(user, dto) {
+        return this.companyService.extendTrial(user.companyId, user.userId, dto.days);
+    }
+    async activate(user) {
+        return this.companyService.activateCompany(user.companyId, user.userId);
+    }
 };
 exports.CompanyController = CompanyController;
 __decorate([
@@ -85,6 +91,23 @@ __decorate([
     __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], CompanyController.prototype, "deleteMember", null);
+__decorate([
+    (0, common_1.Post)('extend-trial'),
+    (0, swagger_1.ApiOperation)({ summary: '试用续期（管理员）' }),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, company_dto_1.ExtendTrialDto]),
+    __metadata("design:returntype", Promise)
+], CompanyController.prototype, "extendTrial", null);
+__decorate([
+    (0, common_1.Post)('activate'),
+    (0, swagger_1.ApiOperation)({ summary: '开通正式版（管理员）' }),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], CompanyController.prototype, "activate", null);
 exports.CompanyController = CompanyController = __decorate([
     (0, swagger_1.ApiTags)('公司/团队 Company'),
     (0, common_1.Controller)('company'),

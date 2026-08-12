@@ -67,6 +67,7 @@ let AuthService = class AuthService {
         if (company.status !== 1) {
             throw new common_1.UnauthorizedException('该公司已被禁用');
         }
+        await this.checkTrial(company);
         const user = await this.prisma.sysUser.findUnique({
             where: {
                 companyId_username: {
@@ -105,6 +106,7 @@ let AuthService = class AuthService {
                 avatarColor: user.avatarColor,
                 customerId: user.customerId ? Number(user.customerId) : null,
             },
+            trial: this.buildTrialInfo(company),
         };
     }
     async registerCompany(dto) {
@@ -116,11 +118,17 @@ let AuthService = class AuthService {
         }
         const passwordHash = await bcrypt.hash(dto.adminPassword, 10);
         const avatarColors = ['#1677ff', '#13c2c2', '#52c41a', '#722ed1', '#fa8c16', '#eb2f96'];
+        const now = new Date();
+        const trialEndsAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
         const result = await this.prisma.$transaction(async (tx) => {
             const company = await tx.company.create({
                 data: {
                     code: dto.companyCode,
                     name: dto.companyName,
+                    phone: dto.phone || null,
+                    plan: 'TRIAL',
+                    trialStartedAt: now,
+                    trialEndsAt,
                 },
             });
             const admin = await tx.sysUser.create({
@@ -136,7 +144,7 @@ let AuthService = class AuthService {
             });
             return { company, admin };
         });
-        this.logger.log(`新公司注册: ${result.company.code} - ${result.company.name}`);
+        this.logger.log(`新公司注册: ${result.company.code} - ${result.company.name}（7天试用至 ${trialEndsAt.toISOString()}）`);
         const payload = this.buildPayload(result.admin, result.company, 'h5');
         const token = this.jwtService.sign(payload);
         return {
@@ -156,6 +164,7 @@ let AuthService = class AuthService {
                 role: result.admin.role,
                 avatarColor: result.admin.avatarColor,
             },
+            trial: this.buildTrialInfo(result.company),
         };
     }
     async loginWithWechat(dto) {
@@ -165,6 +174,7 @@ let AuthService = class AuthService {
         if (!company) {
             throw new common_1.UnauthorizedException('公司代码不存在');
         }
+        await this.checkTrial(company);
         const openid = await this.code2Session(dto.code);
         if (!openid) {
             throw new common_1.UnauthorizedException('微信登录失败: 无法获取 openid');
@@ -197,6 +207,7 @@ let AuthService = class AuthService {
                 avatarColor: user.avatarColor,
                 customerId: user.customerId ? Number(user.customerId) : null,
             },
+            trial: this.buildTrialInfo(company),
         };
     }
     async bindWechat(userId, code) {
@@ -220,7 +231,7 @@ let AuthService = class AuthService {
     async getCurrentUser(userId, companyId) {
         const user = await this.prisma.sysUser.findUnique({
             where: { id: BigInt(userId) },
-            include: { company: true, customer: true },
+            include: { company: true, customer: true, team: true },
         });
         if (!user) {
             throw new common_1.UnauthorizedException('用户不存在');
@@ -236,6 +247,9 @@ let AuthService = class AuthService {
             phone: user.phone,
             avatarColor: user.avatarColor,
             customerId: user.customerId ? Number(user.customerId) : null,
+            teamId: user.teamId ? Number(user.teamId) : null,
+            teamName: user.team?.name || null,
+            trial: this.buildTrialInfo(user.company),
         };
     }
     async code2Session(code) {
@@ -257,6 +271,39 @@ let AuthService = class AuthService {
             this.logger.error(`微信 code2session 请求异常: ${err.message}`);
             return null;
         }
+    }
+    async checkTrial(company) {
+        if (company.plan === 'ACTIVE')
+            return;
+        if (company.plan === 'EXPIRED') {
+            throw new common_1.UnauthorizedException('试用期已结束，请联系管理员开通正式版');
+        }
+        if (company.trialEndsAt && new Date() > company.trialEndsAt) {
+            await this.prisma.company.update({
+                where: { id: company.id },
+                data: { plan: 'EXPIRED' },
+            });
+            throw new common_1.UnauthorizedException('试用期已结束，请联系管理员开通正式版');
+        }
+    }
+    buildTrialInfo(company) {
+        const now = new Date();
+        let daysLeft = 0;
+        if (company.plan === 'ACTIVE') {
+            daysLeft = -1;
+        }
+        else if (company.trialEndsAt) {
+            daysLeft = Math.max(0, Math.ceil((company.trialEndsAt.getTime() - now.getTime()) / 86400000));
+        }
+        return {
+            plan: company.plan,
+            trialStartedAt: company.trialStartedAt ? company.trialStartedAt.toISOString() : null,
+            trialEndsAt: company.trialEndsAt ? company.trialEndsAt.toISOString() : null,
+            daysLeft,
+            isActive: company.plan === 'ACTIVE',
+            isTrial: company.plan === 'TRIAL' && daysLeft > 0,
+            isExpired: company.plan === 'EXPIRED' || (company.plan === 'TRIAL' && daysLeft === 0),
+        };
     }
     buildPayload(user, company, platform) {
         return {

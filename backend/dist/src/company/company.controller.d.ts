@@ -1,6 +1,6 @@
 import { JwtPayload } from '../common/decorators/current-user.decorator';
 import { CompanyService } from './company.service';
-import { AddMemberDto, UpdateMemberDto, QuickRegisterDto } from './dto/company.dto';
+import { AddMemberDto, UpdateMemberDto, QuickRegisterDto, ExtendTrialDto } from './dto/company.dto';
 export declare class CompanyController {
     private companyService;
     constructor(companyService: CompanyService);
@@ -11,6 +11,12 @@ export declare class CompanyController {
         createdAt: string;
         userCount: number;
         orderCount: number;
+        trial: {
+            plan: string;
+            trialStartedAt: string | null;
+            trialEndsAt: string | null;
+            daysLeft: number;
+        };
         users: {
             id: number;
             username: string;
@@ -20,7 +26,17 @@ export declare class CompanyController {
             avatarColor: string | null;
             status: string;
             lastLoginAt: string | null;
+            teamId: number | null;
+            teamName: string | null;
             orderCount: number | null;
+        }[];
+        teams: {
+            id: number;
+            name: string;
+            remark: string | null;
+            status: string;
+            memberCount: number;
+            createdAt: string;
         }[];
         unregistered: {
             name: string;
@@ -49,5 +65,15 @@ export declare class CompanyController {
     deleteMember(user: JwtPayload, memberId: string): Promise<{
         deleted: boolean;
         realName: string;
+    }>;
+    extendTrial(user: JwtPayload, dto: ExtendTrialDto): Promise<{
+        plan: string;
+        trialEndsAt: string;
+        daysLeft: number;
+        message: string;
+    }>;
+    activate(user: JwtPayload): Promise<{
+        plan: string;
+        message: string;
     }>;
 }

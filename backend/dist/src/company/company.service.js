@@ -54,7 +54,10 @@ let CompanyService = class CompanyService {
     async getCompanyInfo(companyId) {
         const company = await this.prisma.company.findUnique({
             where: { id: BigInt(companyId) },
-            include: { users: true },
+            include: {
+                users: { include: { team: true } },
+                teams: true,
+            },
         });
         if (!company)
             throw new common_1.BadRequestException('公司不存在');
@@ -79,8 +82,18 @@ let CompanyService = class CompanyService {
             avatarColor: u.avatarColor,
             status: u.status === 1 ? 'active' : 'disabled',
             lastLoginAt: u.lastLoginAt?.toISOString() || null,
+            teamId: u.teamId ? Number(u.teamId) : null,
+            teamName: u.team?.name || null,
             orderCount: u.role === 'coordinator' ? (coordMap.get(Number(u.id)) || 0)
                 : u.role === 'merchandiser' ? (merMap.get(Number(u.id)) || 0) : null,
+        }));
+        const teams = company.teams.map(t => ({
+            id: Number(t.id),
+            name: t.name,
+            remark: t.remark,
+            status: t.status === 1 ? 'active' : 'disabled',
+            memberCount: users.filter(u => u.teamId === Number(t.id)).length,
+            createdAt: t.createdAt.toISOString(),
         }));
         const unregisteredOrders = await this.prisma.order.findMany({
             where: { companyId: BigInt(companyId) },
@@ -110,7 +123,14 @@ let CompanyService = class CompanyService {
             createdAt: company.createdAt.toISOString(),
             userCount: users.length,
             orderCount: await this.prisma.order.count({ where: { companyId: BigInt(companyId) } }),
+            trial: {
+                plan: company.plan,
+                trialStartedAt: company.trialStartedAt?.toISOString() || null,
+                trialEndsAt: company.trialEndsAt?.toISOString() || null,
+                daysLeft: this.calcTrialDaysLeft(company),
+            },
             users,
+            teams,
             unregistered,
         };
     }
@@ -125,6 +145,7 @@ let CompanyService = class CompanyService {
             throw new common_1.BadRequestException('用户名已存在');
         const passwordHash = await bcrypt.hash(dto.password, 10);
         const avatarColors = ['#1677ff', '#13c2c2', '#52c41a', '#722ed1', '#fa8c16', '#eb2f96', '#2f54eb', '#fa541c'];
+        const teamId = await this.resolveTeamId(companyId, dto.teamId);
         const member = await this.prisma.sysUser.create({
             data: {
                 companyId: BigInt(companyId),
@@ -135,6 +156,7 @@ let CompanyService = class CompanyService {
                 phone: dto.phone || null,
                 avatarColor: avatarColors[Math.random() * avatarColors.length | 0],
                 customerId: dto.role === 'customer' ? undefined : null,
+                teamId: teamId ? BigInt(teamId) : null,
             },
         });
         await this.syncMemberToOrders(member);
@@ -158,6 +180,7 @@ let CompanyService = class CompanyService {
             throw new common_1.BadRequestException('用户名已存在');
         const passwordHash = await bcrypt.hash(dto.password, 10);
         const avatarColors = ['#13c2c2', '#52c41a', '#08979c', '#389e0d', '#5cdbd3', '#b7eb8f'];
+        const teamId = await this.resolveTeamId(companyId, dto.teamId);
         const member = await this.prisma.sysUser.create({
             data: {
                 companyId: BigInt(companyId),
@@ -167,6 +190,7 @@ let CompanyService = class CompanyService {
                 role: dto.role,
                 phone: dto.phone || null,
                 avatarColor: avatarColors[Math.random() * avatarColors.length | 0],
+                teamId: teamId ? BigInt(teamId) : null,
             },
         });
         await this.syncMemberToOrders(member);
@@ -201,16 +225,22 @@ let CompanyService = class CompanyService {
                 throw new common_1.BadRequestException('用户名已存在');
         }
         const passwordHash = dto.password ? await bcrypt.hash(dto.password, 10) : member.passwordHash;
+        const data = {
+            realName: dto.realName,
+            username: dto.username,
+            passwordHash,
+            phone: dto.phone || null,
+            role: dto.role,
+            status: dto.status === 'active' ? 1 : 0,
+        };
+        if (dto.teamId !== undefined) {
+            data.teamId = dto.teamId ? BigInt(dto.teamId) : null;
+            if (dto.teamId)
+                await this.assertTeamInCompany(companyId, dto.teamId);
+        }
         const updated = await this.prisma.sysUser.update({
             where: { id: BigInt(memberId) },
-            data: {
-                realName: dto.realName,
-                username: dto.username,
-                passwordHash,
-                phone: dto.phone || null,
-                role: dto.role,
-                status: dto.status === 'active' ? 1 : 0,
-            },
+            data,
         });
         if (dto.realName !== member.realName) {
             if (member.role === 'coordinator' || dto.role === 'coordinator') {
@@ -249,6 +279,63 @@ let CompanyService = class CompanyService {
         }
         await this.prisma.sysUser.delete({ where: { id: BigInt(memberId) } });
         return { deleted: true, realName: member.realName };
+    }
+    async extendTrial(companyId, adminId, days) {
+        const admin = await this.prisma.sysUser.findUnique({ where: { id: BigInt(adminId) } });
+        if (!admin || admin.role !== 'admin')
+            throw new common_1.ForbiddenException('仅管理员可操作');
+        const company = await this.prisma.company.findUnique({ where: { id: BigInt(companyId) } });
+        if (!company)
+            throw new common_1.BadRequestException('公司不存在');
+        const base = company.trialEndsAt && company.trialEndsAt > new Date()
+            ? company.trialEndsAt
+            : new Date();
+        const newEndsAt = new Date(base.getTime() + days * 24 * 60 * 60 * 1000);
+        const updated = await this.prisma.company.update({
+            where: { id: BigInt(companyId) },
+            data: {
+                plan: 'TRIAL',
+                trialStartedAt: company.trialStartedAt ?? new Date(),
+                trialEndsAt: newEndsAt,
+            },
+        });
+        this.logger.log(`公司 ${company.code} 试用续期 ${days} 天，至 ${newEndsAt.toISOString()}`);
+        return {
+            plan: updated.plan,
+            trialEndsAt: newEndsAt.toISOString(),
+            daysLeft: this.calcTrialDaysLeft(updated),
+            message: `试用期已顺延 ${days} 天`,
+        };
+    }
+    async activateCompany(companyId, adminId) {
+        const admin = await this.prisma.sysUser.findUnique({ where: { id: BigInt(adminId) } });
+        if (!admin || admin.role !== 'admin')
+            throw new common_1.ForbiddenException('仅管理员可操作');
+        const updated = await this.prisma.company.update({
+            where: { id: BigInt(companyId) },
+            data: { plan: 'ACTIVE' },
+        });
+        this.logger.log(`公司 ${updated.code} 已开通正式版`);
+        return { plan: 'ACTIVE', message: '已开通正式版' };
+    }
+    async resolveTeamId(companyId, teamId) {
+        if (teamId === undefined || teamId === null || teamId === 0)
+            return null;
+        await this.assertTeamInCompany(companyId, teamId);
+        return teamId;
+    }
+    async assertTeamInCompany(companyId, teamId) {
+        const team = await this.prisma.team.findUnique({ where: { id: BigInt(teamId) } });
+        if (!team || team.companyId !== BigInt(companyId)) {
+            throw new common_1.BadRequestException('团队不存在或不属于当前公司');
+        }
+    }
+    calcTrialDaysLeft(company) {
+        if (company.plan === 'ACTIVE')
+            return -1;
+        if (!company.trialEndsAt)
+            return 0;
+        return Math.max(0, Math.ceil((company.trialEndsAt.getTime() - Date.now()) / 86400000));
     }
     async syncMemberToOrders(member) {
         if (member.role === 'coordinator') {

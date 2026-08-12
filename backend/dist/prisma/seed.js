@@ -42,7 +42,11 @@ async function main() {
         where: { code: 'DEMO01' },
     });
     if (existingCompany) {
-        console.log('数据库已有数据，跳过种子初始化（保护用户数据）');
+        await prisma.company.updateMany({
+            where: { code: 'DEMO01' },
+            data: { plan: 'ACTIVE' },
+        });
+        console.log('数据库已有数据，跳过种子初始化（保护用户数据）；DEMO01 已设为正式版');
         return;
     }
     console.log('数据库为空，开始种子数据初始化...');
@@ -52,6 +56,7 @@ async function main() {
         data: {
             code: 'DEMO01',
             name: '演示贸易公司',
+            plan: 'ACTIVE',
         },
     });
     console.log(`公司创建: ${company.code} - ${company.name}`);

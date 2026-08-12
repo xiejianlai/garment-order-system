@@ -11,6 +11,12 @@ export declare class CompanyService {
         createdAt: string;
         userCount: number;
         orderCount: number;
+        trial: {
+            plan: string;
+            trialStartedAt: string | null;
+            trialEndsAt: string | null;
+            daysLeft: number;
+        };
         users: {
             id: number;
             username: string;
@@ -20,7 +26,17 @@ export declare class CompanyService {
             avatarColor: string | null;
             status: string;
             lastLoginAt: string | null;
+            teamId: number | null;
+            teamName: string | null;
             orderCount: number | null;
+        }[];
+        teams: {
+            id: number;
+            name: string;
+            remark: string | null;
+            status: string;
+            memberCount: number;
+            createdAt: string;
         }[];
         unregistered: {
             name: string;
@@ -50,5 +66,18 @@ export declare class CompanyService {
         deleted: boolean;
         realName: string;
     }>;
+    extendTrial(companyId: number, adminId: number, days: number): Promise<{
+        plan: string;
+        trialEndsAt: string;
+        daysLeft: number;
+        message: string;
+    }>;
+    activateCompany(companyId: number, adminId: number): Promise<{
+        plan: string;
+        message: string;
+    }>;
+    private resolveTeamId;
+    private assertTeamInCompany;
+    private calcTrialDaysLeft;
     private syncMemberToOrders;
 }

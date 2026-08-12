@@ -19,6 +19,15 @@ export declare class AuthService {
             avatarColor: string | null;
             customerId: number | null;
         };
+        trial: {
+            plan: any;
+            trialStartedAt: any;
+            trialEndsAt: any;
+            daysLeft: number;
+            isActive: boolean;
+            isTrial: boolean;
+            isExpired: boolean;
+        };
     }>;
     registerCompany(dto: RegisterDto): Promise<{
         token: string;
@@ -37,6 +46,15 @@ export declare class AuthService {
             role: string;
             avatarColor: string | null;
         };
+        trial: {
+            plan: any;
+            trialStartedAt: any;
+            trialEndsAt: any;
+            daysLeft: number;
+            isActive: boolean;
+            isTrial: boolean;
+            isExpired: boolean;
+        };
     }>;
     loginWithWechat(dto: WxLoginDto): Promise<{
         token: string;
@@ -50,6 +68,15 @@ export declare class AuthService {
             role: string;
             avatarColor: string | null;
             customerId: number | null;
+        };
+        trial: {
+            plan: any;
+            trialStartedAt: any;
+            trialEndsAt: any;
+            daysLeft: number;
+            isActive: boolean;
+            isTrial: boolean;
+            isExpired: boolean;
         };
     }>;
     bindWechat(userId: number, code: string): Promise<{
@@ -67,7 +94,20 @@ export declare class AuthService {
         phone: string | null;
         avatarColor: string | null;
         customerId: number | null;
+        teamId: number | null;
+        teamName: string | null;
+        trial: {
+            plan: any;
+            trialStartedAt: any;
+            trialEndsAt: any;
+            daysLeft: number;
+            isActive: boolean;
+            isTrial: boolean;
+            isExpired: boolean;
+        };
     }>;
     private code2Session;
+    private checkTrial;
+    private buildTrialInfo;
     private buildPayload;
 }

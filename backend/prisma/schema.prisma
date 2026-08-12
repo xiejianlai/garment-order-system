@@ -11,23 +11,46 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ==================== 公司表（多公司数据隔离） ====================
+// ==================== 公司表（多公司数据隔离 + 套餐/试用） ====================
 model Company {
-  id          BigInt    @id @default(autoincrement())
-  code        String    @unique @db.VarChar(20)   // 公司代码，如 DEMO01
-  name        String    @db.VarChar(100)           // 公司名称
-  phone       String?   @db.VarChar(20)
-  address     String?   @db.VarChar(300)
-  status      Int       @default(1) @db.SmallInt    // 0=禁用 1=启用
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+  id             BigInt    @id @default(autoincrement())
+  code           String    @unique @db.VarChar(20)   // 公司代码，如 DEMO01
+  name           String    @db.VarChar(100)           // 公司名称
+  phone          String?   @db.VarChar(20)
+  address        String?   @db.VarChar(300)
+  status         Int       @default(1) @db.SmallInt    // 0=禁用 1=启用
+  // 套餐: TRIAL(试用) | ACTIVE(正式) | EXPIRED(试用已过期)
+  plan           String    @default("TRIAL") @db.VarChar(20)
+  trialStartedAt DateTime? @map("trial_started_at")
+  trialEndsAt    DateTime? @map("trial_ends_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
   users       SysUser[]
+  teams       Team[]
   customers   Customer[]
   factories   Factory[]
   orders      Order[]
 
   @@map("company")
+}
+
+// ==================== 团队表（公司内多个团队） ====================
+model Team {
+  id        BigInt   @id @default(autoincrement())
+  companyId BigInt   @map("company_id")
+  name      String   @db.VarChar(50)     // 团队名称，如 理单一组
+  remark    String?  @db.VarChar(200)
+  status    Int      @default(1) @db.SmallInt   // 0=停用 1=启用
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  company Company  @relation(fields: [companyId], references: [id])
+  users   SysUser[]
+
+  @@unique([companyId, name], map: "uk_company_team_name")
+  @@index([companyId], map: "idx_team_company_id")
+  @@map("team")
 }
 
 // ==================== 用户表 ====================
@@ -42,6 +65,7 @@ model SysUser {
   email        String?   @db.VarChar(100)
   avatarColor  String?   @map("avatar_color") @db.VarChar(20)  // 头像颜色值，如 #1677ff
   customerId   BigInt?   @map("customer_id")   // 客户角色绑定客户ID
+  teamId       BigInt?   @map("team_id")       // 所属团队（可空）
   wxOpenid     String?   @map("wx_openid") @db.VarChar(100)
   status       Int       @default(1) @db.SmallInt   // 0=禁用 1=启用
   lastLoginAt  DateTime? @map("last_login_at")
@@ -51,6 +75,7 @@ model SysUser {
   // 关联
   company         Company          @relation(fields: [companyId], references: [id])
   customer        Customer?        @relation(fields: [customerId], references: [id])
+  team            Team?            @relation(fields: [teamId], references: [id])
   ordersCreated   Order[]          @relation("OrderCreatedBy")
   ordersCoordinated Order[]        @relation("OrderCoordinator")
   ordersMerchandised Order[]       @relation("OrderMerchandiser")
@@ -61,6 +86,7 @@ model SysUser {
   @@unique([companyId, username], map: "uk_company_username")
   @@index([companyId], map: "idx_sys_user_company_id")
   @@index([role], map: "idx_sys_user_role")
+  @@index([teamId], map: "idx_sys_user_team_id")
   @@index([wxOpenid], map: "idx_sys_user_wx_openid")
   @@map("sys_user")
 }

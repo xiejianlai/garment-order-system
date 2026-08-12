@@ -17,6 +17,7 @@ const ta_stages_module_1 = require("./ta-stages/ta-stages.module");
 const logs_module_1 = require("./logs/logs.module");
 const files_module_1 = require("./files/files.module");
 const company_module_1 = require("./company/company.module");
+const teams_module_1 = require("./teams/teams.module");
 const schedule_1 = require("@nestjs/schedule");
 const websocket_module_1 = require("./websocket/websocket.module");
 let AppModule = class AppModule {
@@ -31,6 +32,7 @@ exports.AppModule = AppModule = __decorate([
             websocket_module_1.WebSocketModule,
             auth_module_1.AuthModule,
             company_module_1.CompanyModule,
+            teams_module_1.TeamsModule,
             orders_module_1.OrdersModule,
             trims_module_1.TrimsModule,
             ta_stages_module_1.TaStagesModule,

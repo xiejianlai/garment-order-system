@@ -17,6 +17,15 @@ export declare class AuthController {
             avatarColor: string | null;
             customerId: number | null;
         };
+        trial: {
+            plan: any;
+            trialStartedAt: any;
+            trialEndsAt: any;
+            daysLeft: number;
+            isActive: boolean;
+            isTrial: boolean;
+            isExpired: boolean;
+        };
     }>;
     register(dto: RegisterDto): Promise<{
         token: string;
@@ -35,6 +44,15 @@ export declare class AuthController {
             role: string;
             avatarColor: string | null;
         };
+        trial: {
+            plan: any;
+            trialStartedAt: any;
+            trialEndsAt: any;
+            daysLeft: number;
+            isActive: boolean;
+            isTrial: boolean;
+            isExpired: boolean;
+        };
     }>;
     wxLogin(dto: WxLoginDto): Promise<{
         token: string;
@@ -48,6 +66,15 @@ export declare class AuthController {
             role: string;
             avatarColor: string | null;
             customerId: number | null;
+        };
+        trial: {
+            plan: any;
+            trialStartedAt: any;
+            trialEndsAt: any;
+            daysLeft: number;
+            isActive: boolean;
+            isTrial: boolean;
+            isExpired: boolean;
         };
     }>;
     wxBind(user: JwtPayload, dto: WxLoginDto): Promise<{
@@ -65,5 +92,16 @@ export declare class AuthController {
         phone: string | null;
         avatarColor: string | null;
         customerId: number | null;
+        teamId: number | null;
+        teamName: string | null;
+        trial: {
+            plan: any;
+            trialStartedAt: any;
+            trialEndsAt: any;
+            daysLeft: number;
+            isActive: boolean;
+            isTrial: boolean;
+            isExpired: boolean;
+        };
     }>;
 }

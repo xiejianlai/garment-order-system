@@ -8,6 +8,7 @@ import { TaStagesModule } from './ta-stages/ta-stages.module';
 import { LogsModule } from './logs/logs.module';
 import { FilesModule } from './files/files.module';
 import { CompanyModule } from './company/company.module';
+import { TeamsModule } from './teams/teams.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { WebSocketModule } from './websocket/websocket.module';
 
@@ -19,6 +20,7 @@ import { WebSocketModule } from './websocket/websocket.module';
     WebSocketModule,
     AuthModule,
     CompanyModule,
+    TeamsModule,
     OrdersModule,
     TrimsModule,
     TaStagesModule,

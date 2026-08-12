@@ -30,6 +30,9 @@ export class AuthService {
       throw new UnauthorizedException('该公司已被禁用');
     }
 
+    // 试用期检查（正式版 ACTIVE 不受限）
+    await this.checkTrial(company);
+
     // 查找用户（公司内唯一）
     const user = await this.prisma.sysUser.findUnique({
       where: {
@@ -77,11 +80,12 @@ export class AuthService {
         avatarColor: user.avatarColor,
         customerId: user.customerId ? Number(user.customerId) : null,
       },
+      trial: this.buildTrialInfo(company),
     };
   }
 
   /**
-   * 公司注册 — 创建公司 + 管理员账号
+   * 公司注册 — 创建公司 + 管理员账号，自动开通7天免费试用
    */
   async registerCompany(dto: RegisterDto) {
     // 检查公司代码是否已存在
@@ -95,12 +99,20 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.adminPassword, 10);
     const avatarColors = ['#1677ff', '#13c2c2', '#52c41a', '#722ed1', '#fa8c16', '#eb2f96'];
 
+    // 7天试用
+    const now = new Date();
+    const trialEndsAt = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
     // 事务：创建公司 + 管理员
     const result = await this.prisma.$transaction(async (tx) => {
       const company = await tx.company.create({
         data: {
           code: dto.companyCode,
           name: dto.companyName,
+          phone: dto.phone || null,
+          plan: 'TRIAL',
+          trialStartedAt: now,
+          trialEndsAt,
         },
       });
 
@@ -119,7 +131,7 @@ export class AuthService {
       return { company, admin };
     });
 
-    this.logger.log(`新公司注册: ${result.company.code} - ${result.company.name}`);
+    this.logger.log(`新公司注册: ${result.company.code} - ${result.company.name}（7天试用至 ${trialEndsAt.toISOString()}）`);
 
     // 自动登录
     const payload = this.buildPayload(result.admin, result.company, 'h5');
@@ -142,6 +154,7 @@ export class AuthService {
         role: result.admin.role,
         avatarColor: result.admin.avatarColor,
       },
+      trial: this.buildTrialInfo(result.company),
     };
   }
 
@@ -155,6 +168,9 @@ export class AuthService {
     if (!company) {
       throw new UnauthorizedException('公司代码不存在');
     }
+
+    // 试用期检查
+    await this.checkTrial(company);
 
     const openid = await this.code2Session(dto.code);
     if (!openid) {
@@ -195,6 +211,7 @@ export class AuthService {
         avatarColor: user.avatarColor,
         customerId: user.customerId ? Number(user.customerId) : null,
       },
+      trial: this.buildTrialInfo(company),
     };
   }
 
@@ -230,7 +247,7 @@ export class AuthService {
   async getCurrentUser(userId: number, companyId: number) {
     const user = await this.prisma.sysUser.findUnique({
       where: { id: BigInt(userId) },
-      include: { company: true, customer: true },
+      include: { company: true, customer: true, team: true },
     });
 
     if (!user) {
@@ -248,6 +265,9 @@ export class AuthService {
       phone: user.phone,
       avatarColor: user.avatarColor,
       customerId: user.customerId ? Number(user.customerId) : null,
+      teamId: user.teamId ? Number(user.teamId) : null,
+      teamName: user.team?.name || null,
+      trial: this.buildTrialInfo(user.company),
     };
   }
 
@@ -269,6 +289,46 @@ export class AuthService {
       this.logger.error(`微信 code2session 请求异常: ${err.message}`);
       return null;
     }
+  }
+
+  /**
+   * 试用期检查 — 过期则标记 EXPIRED 并阻止登录
+   */
+  private async checkTrial(company: any) {
+    if (company.plan === 'ACTIVE') return; // 正式版不受限
+    if (company.plan === 'EXPIRED') {
+      throw new UnauthorizedException('试用期已结束，请联系管理员开通正式版');
+    }
+    // TRIAL
+    if (company.trialEndsAt && new Date() > company.trialEndsAt) {
+      await this.prisma.company.update({
+        where: { id: company.id },
+        data: { plan: 'EXPIRED' },
+      });
+      throw new UnauthorizedException('试用期已结束，请联系管理员开通正式版');
+    }
+  }
+
+  /**
+   * 构建试用信息（登录/注册/me 通用）
+   */
+  private buildTrialInfo(company: any) {
+    const now = new Date();
+    let daysLeft = 0;
+    if (company.plan === 'ACTIVE') {
+      daysLeft = -1; // -1 表示永久/正式版
+    } else if (company.trialEndsAt) {
+      daysLeft = Math.max(0, Math.ceil((company.trialEndsAt.getTime() - now.getTime()) / 86400000));
+    }
+    return {
+      plan: company.plan, // TRIAL | ACTIVE | EXPIRED
+      trialStartedAt: company.trialStartedAt ? company.trialStartedAt.toISOString() : null,
+      trialEndsAt: company.trialEndsAt ? company.trialEndsAt.toISOString() : null,
+      daysLeft,
+      isActive: company.plan === 'ACTIVE',
+      isTrial: company.plan === 'TRIAL' && daysLeft > 0,
+      isExpired: company.plan === 'EXPIRED' || (company.plan === 'TRIAL' && daysLeft === 0),
+    };
   }
 
   private buildPayload(user: any, company: any, platform: 'mp' | 'h5'): JwtPayload {
