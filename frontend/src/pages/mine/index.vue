@@ -11,6 +11,15 @@
       </view>
     </view>
 
+    <!-- 试用状态卡片 -->
+    <view v-if="trialInfo" class="trial-card" :class="'trial-' + trialInfo.plan.toLowerCase()">
+      <view class="trial-left">
+        <text class="trial-badge">{{ trialBadge }}</text>
+        <text class="trial-desc">{{ trialDesc }}</text>
+      </view>
+      <text class="trial-days" v-if="trialInfo.isTrial">剩 {{ trialInfo.daysLeft }} 天</text>
+    </view>
+
     <!-- 菜单列表 -->
     <view class="menu-section">
       <view class="menu-item" @tap="goOrders">
@@ -18,9 +27,14 @@
         <text class="menu-label">我的订单</text>
         <text class="menu-arrow">></text>
       </view>
-      <view class="menu-item" v-if="userStore.isAdmin" @tap="goOrders">
+      <view class="menu-item" v-if="userStore.isManager" @tap="goOrders">
         <text class="menu-icon">➕</text>
         <text class="menu-label">新建订单</text>
+        <text class="menu-arrow">></text>
+      </view>
+      <view class="menu-item" v-if="userStore.isAdmin" @tap="goTeamManage">
+        <text class="menu-icon">👥</text>
+        <text class="menu-label">团队管理</text>
         <text class="menu-arrow">></text>
       </view>
     </view>
@@ -38,6 +52,28 @@ import { useUserStore } from '../../stores/user';
 
 const userStore = useUserStore();
 
+const trialInfo = computed(() => userStore.trialInfo);
+
+const trialBadge = computed(() => {
+  if (!trialInfo.value) return '';
+  if (trialInfo.value.isActive) return '正式版';
+  if (trialInfo.value.isTrial) return '试用中';
+  return '已结束';
+});
+
+const trialDesc = computed(() => {
+  if (!trialInfo.value) return '';
+  if (trialInfo.value.isActive) return '公司已开通正式版服务';
+  if (trialInfo.value.isTrial) return `免费试用至 ${formatTrialEnd(trialInfo.value.trialEndsAt)}`;
+  return '试用已结束，请联系管理员开通正式版';
+});
+
+function formatTrialEnd(dateStr: string | null): string {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 const roleLabel = computed(() => {
   const map: Record<string, string> = {
     admin: '管理员',
@@ -51,6 +87,10 @@ const roleLabel = computed(() => {
 
 function goOrders() {
   uni.switchTab({ url: '/pages/orders/index' });
+}
+
+function goTeamManage() {
+  uni.navigateTo({ url: '/pages/team-manage/index' });
 }
 
 function handleLogout() {
@@ -114,6 +154,53 @@ function handleLogout() {
   background: #fff;
   border-radius: 16rpx;
   overflow: hidden;
+}
+
+/* 试用状态卡片 */
+.trial-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 20rpx;
+  padding: 24rpx;
+  border-radius: 16rpx;
+}
+.trial-active {
+  background: #E8F5EE;
+  border: 1rpx solid #2E9E63;
+}
+.trial-trial {
+  background: #FFF7E8;
+  border: 1rpx solid #F0A63A;
+}
+.trial-expired {
+  background: #FDECEC;
+  border: 1rpx solid #D93B3B;
+}
+.trial-left {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+.trial-badge {
+  font-size: 26rpx;
+  font-weight: 600;
+  padding: 6rpx 16rpx;
+  border-radius: 8rpx;
+  color: #fff;
+}
+.trial-active .trial-badge { background: #2E9E63; }
+.trial-trial .trial-badge { background: #F0A63A; }
+.trial-expired .trial-badge { background: #D93B3B; }
+.trial-desc {
+  font-size: 24rpx;
+  color: #5A5A55;
+}
+.trial-days {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #E88C1A;
+  flex-shrink: 0;
 }
 .menu-item {
   display: flex;

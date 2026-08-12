@@ -15,7 +15,7 @@
         <text class="header-title">订单列表</text>
       </view>
       <view class="header-right">
-        <view v-if="userStore.isAdmin" class="create-btn" @tap="goCreate"><text>+ 新建</text></view>
+        <view v-if="userStore.isManager" class="create-btn" @tap="goCreate"><text>+ 新建</text></view>
         <view class="refresh-btn" @tap="forceRefresh"><text>刷新</text></view>
         <view @tap="handleLogout">
           <text class="user-name">{{ userStore.userInfo?.realName }}</text>

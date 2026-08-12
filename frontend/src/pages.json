@@ -8,6 +8,12 @@
       }
     },
     {
+      "path": "pages/register/index",
+      "style": {
+        "navigationBarTitleText": "注册公司"
+      }
+    },
+    {
       "path": "pages/orders/index",
       "style": {
         "navigationBarTitleText": "订单列表"
@@ -29,6 +35,12 @@
       "path": "pages/trim-manage/index",
       "style": {
         "navigationBarTitleText": "物料管理"
+      }
+    },
+    {
+      "path": "pages/team-manage/index",
+      "style": {
+        "navigationBarTitleText": "团队管理"
       }
     },
     {

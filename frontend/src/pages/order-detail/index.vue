@@ -208,7 +208,7 @@
             <view class="card-title-row">
               <text class="card-title-inline">物料齐套状态</text>
               <view
-                v-if="userStore.isAdmin"
+                v-if="userStore.isManager"
                 class="trim-manage-btn"
                 @tap="goTrimManage"
               >
@@ -220,7 +220,7 @@
                 {{ order.trimsSummary?.allReady ? '全部物料已齐套' : `物料齐套中 ${order.trimsSummary?.ready || 0}/${order.trimsSummary?.total || 0}` }}
               </text>
               <view
-                v-if="userStore.isAdmin"
+                v-if="userStore.isManager"
                 class="banner-action"
                 @tap="handleCheckTrimsReady"
               >
@@ -350,7 +350,7 @@
                 </text>
                 <!-- 管理端可更新所有阶段 -->
                 <view
-                  v-if="userStore.isAdmin"
+                  v-if="userStore.isManager"
                   class="ta-update-btn"
                   @tap="showStageUpdate(stage)"
                 >
@@ -600,7 +600,7 @@ function canUpdateStage(stage: OrderTaStage): boolean {
   if (userStore.isFactory) {
     return stage.stageCategory === 'production';
   }
-  return userStore.isAdmin;
+  return userStore.isManager;
 }
 
 /** 显示阶段更新弹窗 */

@@ -8,16 +8,36 @@
  */
 
 import { http } from '../utils/request';
-import type { UserInfo } from '../types';
+import type { UserInfo, TrialInfo } from '../types';
 
 export interface LoginResult {
   token: string;
   user: UserInfo;
+  trial?: TrialInfo;
+}
+
+export interface RegisterResult {
+  token: string;
+  company: { id: number; code: string; name: string };
+  user: UserInfo;
+  trial?: TrialInfo;
 }
 
 /** 登录 — 公司代码 + 用户名 + 密码 */
 export function loginWithPassword(companyCode: string, username: string, password: string) {
   return http.post<LoginResult>('/auth/login', { companyCode, username, password });
+}
+
+/** 注册公司 — 自动开通7天免费试用并自动登录 */
+export function registerCompany(data: {
+  companyName: string;
+  companyCode: string;
+  adminRealName: string;
+  adminUsername: string;
+  adminPassword: string;
+  phone?: string;
+}) {
+  return http.post<RegisterResult>('/auth/register', data);
 }
 
 /** 小程序端登录 — 微信 code + 公司代码 */

@@ -2,7 +2,18 @@
  * 类型定义 — 前后端共享
  */
 
-export type UserRole = 'admin' | 'merchandiser' | 'factory' | 'customer';
+export type UserRole = 'admin' | 'coordinator' | 'merchandiser' | 'factory' | 'customer';
+
+/** 公司套餐/试用信息 */
+export interface TrialInfo {
+  plan: 'TRIAL' | 'ACTIVE' | 'EXPIRED';
+  trialStartedAt: string | null;
+  trialEndsAt: string | null;
+  daysLeft: number; // -1 表示正式版
+  isActive: boolean;
+  isTrial: boolean;
+  isExpired: boolean;
+}
 
 export interface UserInfo {
   id: number;
@@ -10,12 +21,19 @@ export interface UserInfo {
   realName: string;
   role: UserRole;
   avatarUrl?: string;
+  avatarColor?: string;
+  companyId?: number;
+  companyCode?: string;
+  companyName?: string;
   factoryId: number | null;
   customerId: number | null;
   phone?: string;
   email?: string;
   factory?: { id: number; name: string } | null;
   customer?: { id: number; name: string } | null;
+  teamId?: number | null;
+  teamName?: string | null;
+  trial?: TrialInfo;
 }
 
 export type OrderStatus =
@@ -175,6 +193,7 @@ export const TRIM_BULK_LABELS: Record<string, string> = {
 /** 角色中文映射 */
 export const ROLE_LABELS: Record<string, string> = {
   admin: '管理员',
+  coordinator: '理单员',
   merchandiser: '跟单员',
   factory: '工厂',
   customer: '客户',

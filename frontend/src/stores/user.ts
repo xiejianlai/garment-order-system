@@ -9,13 +9,14 @@
 
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
-import { loginWithPassword, loginWithWechat, bindWechat, getCurrentUser } from '../api/auth';
+import { loginWithPassword, loginWithWechat, bindWechat, getCurrentUser, registerCompany } from '../api/auth';
 import { setToken, setUserInfo, removeToken, removeUserInfo, getToken } from '../utils/auth';
-import type { UserInfo, UserRole } from '../types';
+import type { UserInfo, UserRole, TrialInfo } from '../types';
 import { ROLE_LABELS } from '../types';
 
 export const useUserStore = defineStore('user', () => {
   const userInfo = ref<UserInfo | null>(null);
+  const trial = ref<TrialInfo | null>(null);
   const isLoggedIn = computed(() => !!getToken() && !!userInfo.value);
 
   /** 当前用户角色 */
@@ -24,14 +25,20 @@ export const useUserStore = defineStore('user', () => {
   /** 角色中文 */
   const roleLabel = computed(() => (role.value ? ROLE_LABELS[role.value] : ''));
 
-  /** 是否管理端 */
-  const isAdmin = computed(() => role.value === 'admin' || role.value === 'merchandiser');
+  /** 是否管理员（公司总账号） */
+  const isAdmin = computed(() => role.value === 'admin');
+
+  /** 是否管理端（管理员+跟单） */
+  const isManager = computed(() => role.value === 'admin' || role.value === 'merchandiser');
 
   /** 是否工厂端 */
   const isFactory = computed(() => role.value === 'factory');
 
   /** 是否客户端 */
   const isCustomer = computed(() => role.value === 'customer');
+
+  /** 试用信息（后端随登录/注册/me 返回） */
+  const trialInfo = computed(() => trial.value || userInfo.value?.trial || null);
 
   /**
    * 密码登录 — 公司代码 + 用户名 + 密码
@@ -41,6 +48,7 @@ export const useUserStore = defineStore('user', () => {
     setToken(result.token);
     setUserInfo(result.user);
     userInfo.value = result.user;
+    if (result.trial) trial.value = result.trial;
     return result;
   }
 
@@ -52,6 +60,26 @@ export const useUserStore = defineStore('user', () => {
     setToken(result.token);
     setUserInfo(result.user);
     userInfo.value = result.user;
+    if (result.trial) trial.value = result.trial;
+    return result;
+  }
+
+  /**
+   * 注册公司 — 自动开通7天试用并自动登录
+   */
+  async function registerCompanyAccount(data: {
+    companyName: string;
+    companyCode: string;
+    adminRealName: string;
+    adminUsername: string;
+    adminPassword: string;
+    phone?: string;
+  }) {
+    const result = await registerCompany(data);
+    setToken(result.token);
+    setUserInfo(result.user);
+    userInfo.value = result.user;
+    if (result.trial) trial.value = result.trial;
     return result;
   }
 
@@ -69,6 +97,7 @@ export const useUserStore = defineStore('user', () => {
     const user = await getCurrentUser();
     setUserInfo(user);
     userInfo.value = user;
+    if (user.trial) trial.value = user.trial;
     return user;
   }
 
@@ -79,6 +108,7 @@ export const useUserStore = defineStore('user', () => {
     removeToken();
     removeUserInfo();
     userInfo.value = null;
+    trial.value = null;
     uni.reLaunch({ url: '/pages/login/index' });
   }
 
@@ -88,10 +118,13 @@ export const useUserStore = defineStore('user', () => {
     role,
     roleLabel,
     isAdmin,
+    isManager,
     isFactory,
     isCustomer,
+    trialInfo,
     loginByPassword,
     loginByWechat,
+    registerCompanyAccount,
     bindWxAccount,
     fetchCurrentUser,
     logout,

@@ -116,6 +116,12 @@
     </view>
     <!-- #endif -->
 
+    <!-- 注册公司入口（双端通用） -->
+    <view class="register-entry">
+      <text class="register-text">没有账号？</text>
+      <text class="register-link" @tap="goRegister">注册公司，免费试用 7 天</text>
+    </view>
+
     <!-- 测试账号 (开发环境显示) -->
     <!-- #ifdef H5 -->
     <view class="dev-accounts" v-if="showDevAccounts">
@@ -276,6 +282,11 @@ function fillAccount(username: string, password: string) {
   formData.username = username;
   formData.password = password;
 }
+
+/** 跳转注册公司页 */
+function goRegister() {
+  uni.navigateTo({ url: '/pages/register/index' });
+}
 </script>
 
 <style scoped>
@@ -404,6 +415,17 @@ function fillAccount(username: string, password: string) {
   display: flex;
   align-items: center;
   margin: 32rpx 0;
+}
+
+.register-entry {
+  margin-top: 48rpx;
+  text-align: center;
+  font-size: 26rpx;
+  color: #888780;
+}
+.register-link {
+  color: #185FA5;
+  font-weight: 500;
 }
 
 .divider-line {
