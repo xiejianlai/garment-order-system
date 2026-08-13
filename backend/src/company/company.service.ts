@@ -146,6 +146,7 @@ export class CompanyService {
       username: member.username,
       realName: member.realName,
       role: member.role,
+      teamId: member.teamId ? Number(member.teamId) : null,
       syncedOrders: true,
     };
   }
@@ -186,6 +187,7 @@ export class CompanyService {
       id: Number(member.id),
       realName: member.realName,
       role: member.role,
+      teamId: member.teamId ? Number(member.teamId) : null,
       syncedOrders: true,
     };
   }

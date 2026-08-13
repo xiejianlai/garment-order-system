@@ -1,19 +1,22 @@
 import { Controller, Get, Post, Put, Delete, Param, Body, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser, JwtPayload } from '../common/decorators/current-user.decorator';
 import { TeamsService } from './teams.service';
 import { CreateTeamDto, UpdateTeamDto } from './dto/team.dto';
 
 @ApiTags('团队 Teams')
 @Controller('teams')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
 export class TeamsController {
   constructor(private teamsService: TeamsService) {}
 
   @Get()
-  @ApiOperation({ summary: '团队列表（公司内，登录用户可见）' })
+  @Roles('admin')
+  @ApiOperation({ summary: '团队列表（公司内，仅管理员）' })
   async list(@CurrentUser() user: JwtPayload) {
     return this.teamsService.listTeams(user.companyId);
   }
