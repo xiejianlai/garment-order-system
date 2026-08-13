@@ -53,6 +53,8 @@ export interface OrderListItem {
   assignedFactoryId: number | null;
   merchandiserId: number | null;
   orderStatus: OrderStatus;
+  visibility?: 'restricted' | 'company';
+  visibleUserIds?: number[];
   customer?: { id: number; customerName: string };
   assignedFactory?: { id: number; factoryName: string };
   _count?: { trims: number; taStages: number };
@@ -126,10 +128,27 @@ export interface OperationLog {
   createdAt: string;
 }
 
+export interface OrderFabric {
+  id: number;
+  fabricName: string;
+  color?: string;
+  specification?: string;
+  usagePerPiece?: number;
+  totalDemand?: number;
+  supplierName?: string;
+  status?: string;
+  qtyCheckStatus?: string;
+  orderDate?: string;   // 下单日期
+  plannedDate?: string; // 计划完成日期
+  actualDate?: string;  // 实际到厂日期
+  notes?: string;
+}
+
 export interface OrderDetail extends OrderListItem {
   remark?: string;
   createdBy: number;
   colorSizes: ColorSizeItem[];
+  fabrics: OrderFabric[];
   trims: OrderTrim[];
   taStages: OrderTaStage[];
   logs: OperationLog[];

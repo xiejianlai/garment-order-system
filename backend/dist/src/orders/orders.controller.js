@@ -44,6 +44,18 @@ let OrdersController = class OrdersController {
     async updateTaStage(id, stageCode, dto, user) {
         return this.ordersService.updateTaStage(Number(id), stageCode, dto, user);
     }
+    async remove(id, user) {
+        return this.ordersService.deleteOrder(Number(id), user);
+    }
+    async updateVisibility(id, dto, user) {
+        return this.ordersService.updateVisibility(Number(id), dto, user);
+    }
+    async addFabric(id, dto, user) {
+        return this.ordersService.addFabric(Number(id), dto, user);
+    }
+    async updateFabric(id, fabricId, dto, user) {
+        return this.ordersService.updateFabric(Number(id), Number(fabricId), dto, user);
+    }
 };
 exports.OrdersController = OrdersController;
 __decorate([
@@ -117,6 +129,46 @@ __decorate([
     __metadata("design:paramtypes", [String, String, create_order_dto_1.UpdateTaStageDto, Object]),
     __metadata("design:returntype", Promise)
 ], OrdersController.prototype, "updateTaStage", null);
+__decorate([
+    (0, common_1.Delete)(':id'),
+    (0, swagger_1.ApiOperation)({ summary: '删除订单（仅管理员，软删除+记录日志）' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Patch)(':id/visibility'),
+    (0, swagger_1.ApiOperation)({ summary: '设置订单可见性（仅管理员）' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, create_order_dto_1.UpdateVisibilityDto, Object]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "updateVisibility", null);
+__decorate([
+    (0, common_1.Post)(':id/fabrics'),
+    (0, swagger_1.ApiOperation)({ summary: '新增面料记录（品名/颜色/数量/供应商/下单日期/计划完成日期）' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, create_order_dto_1.CreateFabricDto, Object]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "addFabric", null);
+__decorate([
+    (0, common_1.Patch)(':id/fabrics/:fabricId'),
+    (0, swagger_1.ApiOperation)({ summary: '编辑面料记录' }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Param)('fabricId')),
+    __param(2, (0, common_1.Body)()),
+    __param(3, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, create_order_dto_1.UpdateFabricDto, Object]),
+    __metadata("design:returntype", Promise)
+], OrdersController.prototype, "updateFabric", null);
 exports.OrdersController = OrdersController = __decorate([
     (0, swagger_1.ApiTags)('订单 Orders'),
     (0, swagger_1.ApiBearerAuth)(),

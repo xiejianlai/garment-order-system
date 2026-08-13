@@ -51,3 +51,29 @@ export declare class UpdateTaStageDto {
     actualDate?: string;
     remark?: string;
 }
+export declare class CreateFabricDto {
+    fabricName: string;
+    color?: string;
+    specification?: string;
+    usagePerPiece?: number;
+    totalDemand?: number;
+    supplierName?: string;
+    orderDate?: string;
+    plannedDate?: string;
+    notes?: string;
+}
+export declare class UpdateFabricDto {
+    fabricName?: string;
+    color?: string;
+    specification?: string;
+    usagePerPiece?: number;
+    totalDemand?: number;
+    supplierName?: string;
+    orderDate?: string;
+    plannedDate?: string;
+    notes?: string;
+}
+export declare class UpdateVisibilityDto {
+    visibility?: 'restricted' | 'company';
+    visibleUserIds?: number[];
+}

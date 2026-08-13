@@ -141,17 +141,19 @@ let OrdersService = class OrdersService {
     }
     async getOrderList(user, status, page, limit) {
         const companyId = BigInt(user.companyId);
-        const where = { companyId };
+        const where = { companyId, deletedAt: null };
         if (user.role === 'coordinator') {
             where.OR = [
                 { coordinatorId: BigInt(user.userId) },
                 { coordinatorName: user.realName, coordinatorId: null },
+                { visibleUserIds: { has: String(user.userId) } },
             ];
         }
         else if (user.role === 'merchandiser') {
             where.OR = [
                 { merchandiserId: BigInt(user.userId) },
                 { merchandiserName: user.realName, merchandiserId: null },
+                { visibleUserIds: { has: String(user.userId) } },
             ];
         }
         else if (user.role === 'customer') {
@@ -203,17 +205,42 @@ let OrdersService = class OrdersService {
             throw new common_1.NotFoundException('订单不存在');
         if (Number(order.companyId) !== user.companyId)
             throw new common_1.ForbiddenException('无权查看此订单');
-        if (user.role === 'coordinator') {
-            const isMine = Number(order.coordinatorId) === user.userId || order.coordinatorName === user.realName;
-            if (!isMine)
-                throw new common_1.ForbiddenException('无权查看此订单');
-        }
-        if (user.role === 'merchandiser') {
-            const isMine = Number(order.merchandiserId) === user.userId || order.merchandiserName === user.realName;
-            if (!isMine)
-                throw new common_1.ForbiddenException('无权查看此订单');
+        if (order.deletedAt)
+            throw new common_1.NotFoundException('订单不存在');
+        if (!this.canViewOrder(order, user)) {
+            throw new common_1.ForbiddenException('无权查看此订单');
         }
         return this.serializeOrderDetail(order);
+    }
+    canViewOrder(order, user) {
+        if (user.role === 'admin')
+            return true;
+        if (user.role === 'customer') {
+            return Number(order.customerId) === Number(user.customerId || 0);
+        }
+        const viewerIds = (order.visibleUserIds || []).map((id) => Number(id));
+        if (viewerIds.includes(Number(user.userId)))
+            return true;
+        if (user.role === 'coordinator') {
+            return Number(order.coordinatorId) === Number(user.userId) ||
+                (order.coordinatorName === user.realName && !order.coordinatorId);
+        }
+        if (user.role === 'merchandiser') {
+            return Number(order.merchandiserId) === Number(user.userId) ||
+                (order.merchandiserName === user.realName && !order.merchandiserId);
+        }
+        return true;
+    }
+    isAssignee(order, user) {
+        if (user.role === 'coordinator') {
+            return Number(order.coordinatorId) === Number(user.userId) ||
+                (order.coordinatorName === user.realName && !order.coordinatorId);
+        }
+        if (user.role === 'merchandiser') {
+            return Number(order.merchandiserId) === Number(user.userId) ||
+                (order.merchandiserName === user.realName && !order.merchandiserId);
+        }
+        return false;
     }
     async updateOrder(orderId, dto, user) {
         const order = await this.prisma.order.findUnique({ where: { id: BigInt(orderId) } });
@@ -321,7 +348,15 @@ let OrdersService = class OrdersService {
     async updateOrderStatus(orderId, dto, user) {
         const order = await this.prisma.order.findUnique({ where: { id: BigInt(orderId) } });
         if (!order)
-            throw new common_1.NotFoundException();
+            throw new common_1.NotFoundException('订单不存在');
+        if (Number(order.companyId) !== user.companyId)
+            throw new common_1.ForbiddenException();
+        if (order.deletedAt)
+            throw new common_1.NotFoundException('订单不存在');
+        const canChange = user.role === 'admin' ||
+            (user.role === 'coordinator' && this.isAssignee(order, user));
+        if (!canChange)
+            throw new common_1.ForbiddenException('无修改订单状态权限');
         const oldStatus = order.orderStatus;
         await this.prisma.order.update({
             where: { id: BigInt(orderId) },
@@ -341,11 +376,40 @@ let OrdersService = class OrdersService {
         return { updated: true };
     }
     async updateTaStage(orderId, stageCode, dto, user) {
+        const order = await this.prisma.order.findUnique({
+            where: { id: BigInt(orderId) },
+            select: { id: true, companyId: true, deletedAt: true, coordinatorId: true, coordinatorName: true, merchandiserId: true, merchandiserName: true },
+        });
+        if (!order)
+            throw new common_1.NotFoundException('订单不存在');
+        if (Number(order.companyId) !== user.companyId)
+            throw new common_1.ForbiddenException();
+        if (order.deletedAt)
+            throw new common_1.NotFoundException('订单不存在');
         const stage = await this.prisma.orderTaStage.findUnique({
             where: { orderId_stageCode: { orderId: BigInt(orderId), stageCode } },
         });
         if (!stage)
             throw new common_1.NotFoundException('T&A阶段不存在');
+        if (user.role === 'admin') {
+        }
+        else if (user.role === 'coordinator') {
+            if (!this.isAssignee(order, user))
+                throw new common_1.ForbiddenException('仅能更新自己负责的订单');
+        }
+        else if (user.role === 'merchandiser') {
+            if (!this.isAssignee(order, user))
+                throw new common_1.ForbiddenException('仅能更新自己负责的订单');
+            if (stage.stageCategory === 'shipping')
+                throw new common_1.ForbiddenException('跟单员无权更新出货阶段进度');
+        }
+        else if (user.role === 'factory') {
+            if (stage.stageCategory !== 'production')
+                throw new common_1.ForbiddenException('工厂仅能更新大货生产阶段');
+        }
+        else {
+            throw new common_1.ForbiddenException('无更新T&A进度权限');
+        }
         const changes = [];
         const updateData = { updatedBy: BigInt(user.userId) };
         if (dto.status && dto.status !== stage.status) {
@@ -395,6 +459,227 @@ let OrdersService = class OrdersService {
         }
         return { updated: true, changes };
     }
+    async deleteOrder(orderId, user) {
+        if (user.role !== 'admin')
+            throw new common_1.ForbiddenException('仅管理员可删除订单');
+        const order = await this.prisma.order.findUnique({ where: { id: BigInt(orderId) } });
+        if (!order)
+            throw new common_1.NotFoundException('订单不存在');
+        if (Number(order.companyId) !== user.companyId)
+            throw new common_1.ForbiddenException();
+        if (order.deletedAt)
+            throw new common_1.NotFoundException('订单不存在');
+        await this.prisma.$transaction(async (tx) => {
+            await tx.order.update({
+                where: { id: BigInt(orderId) },
+                data: { deletedAt: new Date() },
+            });
+            await tx.operationLog.create({
+                data: {
+                    orderId: BigInt(orderId),
+                    userId: BigInt(user.userId),
+                    userName: user.realName,
+                    userRole: user.role,
+                    module: 'order',
+                    action: 'delete',
+                    changeSummary: `删除订单 ${order.orderNo}（客户: ${order.customerName}，款号: ${order.styleNo}，数量: ${order.totalQty}件）`,
+                },
+            });
+        });
+        return { deleted: true };
+    }
+    async updateVisibility(orderId, dto, user) {
+        if (user.role !== 'admin')
+            throw new common_1.ForbiddenException('仅管理员可设置订单可见性');
+        const order = await this.prisma.order.findUnique({ where: { id: BigInt(orderId) } });
+        if (!order)
+            throw new common_1.NotFoundException('订单不存在');
+        if (Number(order.companyId) !== user.companyId)
+            throw new common_1.ForbiddenException();
+        if (order.deletedAt)
+            throw new common_1.NotFoundException('订单不存在');
+        const updateData = {};
+        const changes = [];
+        if (dto.visibility && dto.visibility !== order.visibility) {
+            updateData.visibility = dto.visibility;
+            changes.push(`可见范围: ${order.visibility === 'restricted' ? '仅相关人员' : '公司全员'} → ${dto.visibility === 'restricted' ? '仅相关人员' : '公司全员'}`);
+        }
+        if (dto.visibleUserIds) {
+            const ids = dto.visibleUserIds.map(id => String(id));
+            updateData.visibleUserIds = ids;
+            const oldIds = (order.visibleUserIds || []).map(id => Number(id));
+            const newIds = dto.visibleUserIds;
+            const added = newIds.filter(id => !oldIds.includes(id));
+            const removed = oldIds.filter(id => !newIds.includes(id));
+            if (added.length > 0 || removed.length > 0) {
+                changes.push(`额外可见用户: ${added.length > 0 ? '新增' + added.length + '人' : ''}${removed.length > 0 ? '移除' + removed.length + '人' : ''}`);
+            }
+        }
+        if (changes.length === 0)
+            return { updated: false, changes };
+        await this.prisma.$transaction(async (tx) => {
+            await tx.order.update({
+                where: { id: BigInt(orderId) },
+                data: updateData,
+            });
+            await tx.operationLog.create({
+                data: {
+                    orderId: BigInt(orderId),
+                    userId: BigInt(user.userId),
+                    userName: user.realName,
+                    userRole: user.role,
+                    module: 'order',
+                    action: 'update',
+                    changeSummary: `订单可见性调整: ${changes.join('；')}`,
+                },
+            });
+        });
+        return { updated: true, changes };
+    }
+    async addFabric(orderId, dto, user) {
+        const order = await this.prisma.order.findUnique({ where: { id: BigInt(orderId) } });
+        if (!order)
+            throw new common_1.NotFoundException('订单不存在');
+        if (Number(order.companyId) !== user.companyId)
+            throw new common_1.ForbiddenException();
+        if (order.deletedAt)
+            throw new common_1.NotFoundException('订单不存在');
+        const canEdit = user.role === 'admin' ||
+            (user.role === 'coordinator' && this.isAssignee(order, user));
+        if (!canEdit)
+            throw new common_1.ForbiddenException('无面料管理权限');
+        let supplierId = null;
+        if (dto.supplierName) {
+            const matched = await this.prisma.factory.findFirst({
+                where: { companyId: BigInt(user.companyId), factoryName: dto.supplierName },
+            });
+            if (matched)
+                supplierId = matched.id;
+        }
+        const fabric = await this.prisma.$transaction(async (tx) => {
+            const newFabric = await tx.orderFabric.create({
+                data: {
+                    orderId: BigInt(orderId),
+                    fabricName: dto.fabricName,
+                    color: dto.color || null,
+                    specification: dto.specification || null,
+                    usagePerPiece: dto.usagePerPiece ?? null,
+                    totalDemand: dto.totalDemand ?? 0,
+                    supplierId,
+                    supplierName: dto.supplierName || null,
+                    orderDate: dto.orderDate ? new Date(dto.orderDate) : null,
+                    plannedDate: dto.plannedDate ? new Date(dto.plannedDate) : null,
+                    notes: dto.notes || null,
+                    status: dto.orderDate ? 'ordered' : 'not_ordered',
+                    createdBy: BigInt(user.userId),
+                },
+            });
+            await tx.operationLog.create({
+                data: {
+                    orderId: BigInt(orderId),
+                    userId: BigInt(user.userId),
+                    userName: user.realName,
+                    userRole: user.role,
+                    module: 'fabric',
+                    action: 'create',
+                    targetId: newFabric.id,
+                    changeSummary: `新增面料[${dto.fabricName}]，数量: ${dto.totalDemand ?? '-'}，供应商: ${dto.supplierName || '-'}`,
+                },
+            });
+            return newFabric;
+        });
+        return { id: Number(fabric.id), fabricName: fabric.fabricName };
+    }
+    async updateFabric(orderId, fabricId, dto, user) {
+        const order = await this.prisma.order.findUnique({ where: { id: BigInt(orderId) } });
+        if (!order)
+            throw new common_1.NotFoundException('订单不存在');
+        if (Number(order.companyId) !== user.companyId)
+            throw new common_1.ForbiddenException();
+        if (order.deletedAt)
+            throw new common_1.NotFoundException('订单不存在');
+        const canEdit = user.role === 'admin' ||
+            (user.role === 'coordinator' && this.isAssignee(order, user));
+        if (!canEdit)
+            throw new common_1.ForbiddenException('无面料管理权限');
+        const fabric = await this.prisma.orderFabric.findUnique({
+            where: { id: BigInt(fabricId), orderId: BigInt(orderId) },
+        });
+        if (!fabric)
+            throw new common_1.NotFoundException('面料记录不存在');
+        const updateData = {};
+        const changes = [];
+        if (dto.fabricName !== undefined && dto.fabricName !== fabric.fabricName) {
+            changes.push(`品名: ${fabric.fabricName} → ${dto.fabricName}`);
+            updateData.fabricName = dto.fabricName;
+        }
+        if (dto.color !== undefined && dto.color !== fabric.color) {
+            changes.push(`颜色: ${fabric.color || '-'} → ${dto.color || '-'}`);
+            updateData.color = dto.color || null;
+        }
+        if (dto.totalDemand !== undefined && dto.totalDemand !== fabric.totalDemand) {
+            changes.push(`订单数量: ${fabric.totalDemand ?? '-'} → ${dto.totalDemand}`);
+            updateData.totalDemand = dto.totalDemand;
+        }
+        if (dto.supplierName !== undefined && dto.supplierName !== (fabric.supplierName || '')) {
+            changes.push(`供应商: ${fabric.supplierName || '-'} → ${dto.supplierName || '-'}`);
+            updateData.supplierName = dto.supplierName || null;
+            if (dto.supplierName) {
+                const matched = await this.prisma.factory.findFirst({
+                    where: { companyId: BigInt(user.companyId), factoryName: dto.supplierName },
+                });
+                updateData.supplierId = matched ? matched.id : null;
+            }
+            else {
+                updateData.supplierId = null;
+            }
+        }
+        if (dto.orderDate !== undefined) {
+            const newDate = dto.orderDate ? new Date(dto.orderDate) : null;
+            const oldStr = fabric.orderDate ? fabric.orderDate.toISOString().split('T')[0] : '';
+            const newStr = dto.orderDate || '';
+            if (oldStr !== newStr) {
+                changes.push(`下单日期: ${oldStr || '-'} → ${newStr || '-'}`);
+                updateData.orderDate = newDate;
+            }
+        }
+        if (dto.plannedDate !== undefined) {
+            const newDate = dto.plannedDate ? new Date(dto.plannedDate) : null;
+            const oldStr = fabric.plannedDate ? fabric.plannedDate.toISOString().split('T')[0] : '';
+            const newStr = dto.plannedDate || '';
+            if (oldStr !== newStr) {
+                changes.push(`计划完成日期: ${oldStr || '-'} → ${newStr || '-'}`);
+                updateData.plannedDate = newDate;
+            }
+        }
+        if (dto.specification !== undefined)
+            updateData.specification = dto.specification || null;
+        if (dto.usagePerPiece !== undefined)
+            updateData.usagePerPiece = dto.usagePerPiece ?? null;
+        if (dto.notes !== undefined)
+            updateData.notes = dto.notes || null;
+        if (changes.length === 0)
+            return { updated: false, changes };
+        await this.prisma.$transaction(async (tx) => {
+            await tx.orderFabric.update({
+                where: { id: BigInt(fabricId) },
+                data: updateData,
+            });
+            await tx.operationLog.create({
+                data: {
+                    orderId: BigInt(orderId),
+                    userId: BigInt(user.userId),
+                    userName: user.realName,
+                    userRole: user.role,
+                    module: 'fabric',
+                    action: 'update',
+                    targetId: BigInt(fabricId),
+                    changeSummary: `面料[${fabric.fabricName}]更新: ${changes.join('；')}`,
+                },
+            });
+        });
+        return { updated: true, changes };
+    }
     async getOptions(user) {
         const companyId = BigInt(user.companyId);
         const customers = await this.prisma.customer.findMany({
@@ -440,6 +725,8 @@ let OrdersService = class OrdersService {
             merchandiserId: order.merchandiserId ? Number(order.merchandiserId) : null,
             merchandiserName: order.merchandiserName,
             orderStatus: order.orderStatus,
+            visibility: order.visibility || 'restricted',
+            visibleUserIds: (order.visibleUserIds || []).map((id) => Number(id)),
             createdAt: order.createdAt?.toISOString(),
             customer: order.customer ? {
                 id: Number(order.customer.id),
@@ -505,8 +792,10 @@ let OrdersService = class OrdersService {
                 supplierName: f.supplierName,
                 status: f.status,
                 qtyCheckStatus: f.qtyCheckStatus,
+                orderDate: f.orderDate?.toISOString().split('T')[0],
                 plannedDate: f.plannedDate?.toISOString().split('T')[0],
                 actualDate: f.actualDate?.toISOString().split('T')[0],
+                notes: f.notes,
             })) || [],
             trims: trims.map((t) => ({
                 id: Number(t.id),

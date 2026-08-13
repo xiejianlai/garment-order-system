@@ -53,6 +53,51 @@ export function createOrder(data: CreateOrderPayload) {
   return http.post<{ id: number; orderNo: string }>('/orders', data, { showLoading: true, loadingText: '创建中...' });
 }
 
+/** 编辑订单（基础信息+重新分配理单/跟单+颜色尺码） */
+export function updateOrder(id: number, data: Partial<CreateOrderPayload>) {
+  return http.patch<{ updated: boolean; changes: string[] }>(`/orders/${id}`, data, { showLoading: true, loadingText: '保存中...' });
+}
+
+/** 删除订单（仅管理员） */
+export function deleteOrder(id: number) {
+  return http.delete<{ deleted: boolean }>(`/orders/${id}`);
+}
+
+/** 设置订单可见性（仅管理员） */
+export function updateOrderVisibility(id: number, data: { visibility?: 'restricted' | 'company'; visibleUserIds?: number[] }) {
+  return http.patch<{ updated: boolean; changes: string[] }>(`/orders/${id}/visibility`, data);
+}
+
+/** 新增面料记录 */
+export function addFabric(orderId: number, data: {
+  fabricName: string;
+  color?: string;
+  totalDemand?: number;
+  supplierName?: string;
+  orderDate?: string;
+  plannedDate?: string;
+  specification?: string;
+  usagePerPiece?: number;
+  notes?: string;
+}) {
+  return http.post<{ id: number; fabricName: string }>(`/orders/${orderId}/fabrics`, data, { showLoading: true, loadingText: '保存中...' });
+}
+
+/** 编辑面料记录 */
+export function updateFabric(orderId: number, fabricId: number, data: Partial<{
+  fabricName: string;
+  color: string;
+  totalDemand: number;
+  supplierName: string;
+  orderDate: string;
+  plannedDate: string;
+  specification: string;
+  usagePerPiece: number;
+  notes: string;
+}>) {
+  return http.patch<{ updated: boolean; changes: string[] }>(`/orders/${orderId}/fabrics/${fabricId}`, data, { showLoading: true, loadingText: '保存中...' });
+}
+
 /** 更新订单状态 */
 export function updateOrderStatus(id: number, orderStatus: string) {
   return http.patch<{ id: number; orderStatus: string }>(`/orders/${id}/status`, { orderStatus });

@@ -28,8 +28,26 @@ export const useUserStore = defineStore('user', () => {
   /** 是否管理员（公司总账号） */
   const isAdmin = computed(() => role.value === 'admin');
 
-  /** 是否管理端（管理员+跟单） */
-  const isManager = computed(() => role.value === 'admin' || role.value === 'merchandiser');
+  /** 是否理单员 */
+  const isCoordinator = computed(() => role.value === 'coordinator');
+
+  /** 是否跟单员 */
+  const isMerchandiser = computed(() => role.value === 'merchandiser');
+
+  /** 是否管理端（管理员+理单+跟单） */
+  const isManager = computed(() => role.value === 'admin' || role.value === 'coordinator' || role.value === 'merchandiser');
+
+  /** 可管理物料进度（管理员+理单；跟单无物料权限） */
+  const canManageTrims = computed(() => role.value === 'admin' || role.value === 'coordinator');
+
+  /** 可更新T&A进度（管理员+理单+跟单，跟单不含出货阶段） */
+  const canUpdateTa = computed(() => role.value === 'admin' || role.value === 'coordinator' || role.value === 'merchandiser');
+
+  /** 可更新出货阶段T&A进度（管理员+理单） */
+  const canUpdateTaShipping = computed(() => role.value === 'admin' || role.value === 'coordinator');
+
+  /** 可编辑订单基础信息（管理员+理单） */
+  const canEditOrder = computed(() => role.value === 'admin' || role.value === 'coordinator');
 
   /** 是否工厂端 */
   const isFactory = computed(() => role.value === 'factory');
@@ -118,7 +136,13 @@ export const useUserStore = defineStore('user', () => {
     role,
     roleLabel,
     isAdmin,
+    isCoordinator,
+    isMerchandiser,
     isManager,
+    canManageTrims,
+    canUpdateTa,
+    canUpdateTaShipping,
+    canEditOrder,
     isFactory,
     isCustomer,
     trialInfo,

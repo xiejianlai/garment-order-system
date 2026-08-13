@@ -1,5 +1,5 @@
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateOrderDto, UpdateOrderDto, UpdateOrderStatusDto, UpdateTaStageDto } from './dto/create-order.dto';
+import { CreateOrderDto, UpdateOrderDto, UpdateOrderStatusDto, UpdateTaStageDto, CreateFabricDto, UpdateFabricDto, UpdateVisibilityDto } from './dto/create-order.dto';
 import { JwtPayload } from '../common/decorators/current-user.decorator';
 export declare class OrdersService {
     private prisma;
@@ -24,6 +24,8 @@ export declare class OrdersService {
         merchandiserId: number | null;
         merchandiserName: any;
         orderStatus: any;
+        visibility: any;
+        visibleUserIds: any;
         createdAt: any;
         customer: {
             id: number;
@@ -56,6 +58,8 @@ export declare class OrdersService {
             merchandiserId: number | null;
             merchandiserName: any;
             orderStatus: any;
+            visibility: any;
+            visibleUserIds: any;
             createdAt: any;
             customer: {
                 id: number;
@@ -122,6 +126,8 @@ export declare class OrdersService {
         merchandiserId: number | null;
         merchandiserName: any;
         orderStatus: any;
+        visibility: any;
+        visibleUserIds: any;
         createdAt: any;
         customer: {
             id: number;
@@ -134,6 +140,8 @@ export declare class OrdersService {
             factoryCode: any;
         } | null;
     }>;
+    private canViewOrder;
+    private isAssignee;
     updateOrder(orderId: number, dto: UpdateOrderDto, user: JwtPayload): Promise<{
         updated: boolean;
         changes: string[];
@@ -142,6 +150,21 @@ export declare class OrdersService {
         updated: boolean;
     }>;
     updateTaStage(orderId: number, stageCode: string, dto: UpdateTaStageDto, user: JwtPayload): Promise<{
+        updated: boolean;
+        changes: string[];
+    }>;
+    deleteOrder(orderId: number, user: JwtPayload): Promise<{
+        deleted: boolean;
+    }>;
+    updateVisibility(orderId: number, dto: UpdateVisibilityDto, user: JwtPayload): Promise<{
+        updated: boolean;
+        changes: string[];
+    }>;
+    addFabric(orderId: number, dto: CreateFabricDto, user: JwtPayload): Promise<{
+        id: number;
+        fabricName: string;
+    }>;
+    updateFabric(orderId: number, fabricId: number, dto: UpdateFabricDto, user: JwtPayload): Promise<{
         updated: boolean;
         changes: string[];
     }>;

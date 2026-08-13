@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { JwtPayload } from '../common/decorators/current-user.decorator';
 import { WebSocketGatewayImpl } from '../websocket/websocket.gateway';
@@ -77,12 +77,20 @@ export class TrimsService {
    * 为订单添加辅料
    */
   async addTrim(orderId: number, dto: CreateTrimDto, user: JwtPayload) {
-    // 获取订单总数量用于计算总需求
+    // 获取订单总数量用于计算总需求 + 归属校验
     const order = await this.prisma.order.findUnique({
       where: { id: BigInt(orderId) },
-      select: { totalQty: true },
+      select: { id: true, companyId: true, totalQty: true, deletedAt: true, coordinatorId: true, coordinatorName: true },
     });
-    if (!order) throw new NotFoundException('订单不存在');
+    if (!order || order.deletedAt) throw new NotFoundException('订单不存在');
+    if (Number(order.companyId) !== user.companyId) throw new ForbiddenException();
+
+    // 理单仅能管理自己负责的订单
+    if (user.role === 'coordinator') {
+      const isMine = Number(order.coordinatorId) === Number(user.userId) ||
+        (order.coordinatorName === user.realName && !order.coordinatorId);
+      if (!isMine) throw new ForbiddenException('仅能管理自己负责的订单物料');
+    }
 
     const totalDemand = dto.totalDemand && dto.totalDemand > 0
       ? dto.totalDemand
@@ -138,8 +146,18 @@ export class TrimsService {
   async updateTrimStatus(trimId: number, dto: UpdateTrimStatusDto, user: JwtPayload) {
     const trim = await this.prisma.orderTrim.findUnique({
       where: { id: BigInt(trimId) },
+      include: { order: { select: { companyId: true, deletedAt: true, coordinatorId: true, coordinatorName: true } } },
     });
     if (!trim) throw new NotFoundException('辅料记录不存在');
+    if (Number(trim.order.companyId) !== user.companyId) throw new ForbiddenException();
+    if (trim.order.deletedAt) throw new NotFoundException('订单不存在');
+
+    // 理单仅能管理自己负责的订单
+    if (user.role === 'coordinator') {
+      const isMine = Number(trim.order.coordinatorId) === Number(user.userId) ||
+        (trim.order.coordinatorName === user.realName && !trim.order.coordinatorId);
+      if (!isMine) throw new ForbiddenException('仅能管理自己负责的订单物料');
+    }
 
     // 构建更新数据
     const updateData: any = {};

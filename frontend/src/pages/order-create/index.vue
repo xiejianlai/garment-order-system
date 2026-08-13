@@ -205,16 +205,21 @@
     <!-- 提交 -->
     <view class="submit-area">
       <button class="btn-cancel" @tap="handleCancel">取消</button>
-      <button class="btn-submit" :disabled="submitting" @tap="handleSubmit">{{ submitting ? '创建中...' : '创建订单' }}</button>
+      <button class="btn-submit" :disabled="submitting" @tap="handleSubmit">{{ submitting ? '保存中...' : (isEdit ? '保存修改' : '创建订单') }}</button>
     </view>
   </view>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue';
-import { createOrder } from '../../api/orders';
+import { onLoad } from '@dcloudio/uni-app';
+import { createOrder, updateOrder, getOrderDetail } from '../../api/orders';
 import { uploadFile } from '../../utils/request';
 import type { CreateOrderPayload } from '../../api/orders';
+
+// ========== 编辑模式 ==========
+const isEdit = ref(false);
+const orderId = ref(0);
 
 // ========== 组合输入组件 ==========
 // 自由输入 + 历史下拉选择，新值自动保存到 localStorage
@@ -345,6 +350,49 @@ function clearMatrix() { matrixData.value = {}; }
 // ========== 图片 ==========
 function onDateChange(e: any) { form.deliveryDate = e.detail.value; }
 
+/** 编辑模式：加载订单详情填充表单 */
+async function loadOrderForEdit(id: number) {
+  try {
+    const detail = await getOrderDetail(id);
+    form.orderNo = detail.orderNo;
+    form.customerName = detail.customer?.customerName || '';
+    form.styleNo = detail.styleNo;
+    form.styleName = detail.styleName || '';
+    form.season = detail.season || '';
+    form.category = detail.category || '';
+    form.garmentImageUrl = detail.garmentImageUrl || '';
+    form.deliveryDate = detail.deliveryDate || '';
+    form.factoryName = detail.assignedFactory?.factoryName || '';
+    form.coordinatorName = detail.coordinatorName || '';
+    form.merchandiserName = detail.merchandiserName || '';
+    form.remark = detail.remark || '';
+
+    // 颜色/尺码/矩阵
+    colors.value = [...new Set(detail.colorSizes.map((cs) => cs.color))];
+    sizes.value = [...new Set(detail.colorSizes.map((cs) => cs.size))];
+    const matrix: Record<string, number> = {};
+    detail.colorSizes.forEach((cs) => {
+      matrix[`${cs.color}|${cs.size}`] = cs.quantity;
+    });
+    matrixData.value = matrix;
+
+    uni.setNavigationBarTitle({ title: '编辑订单' });
+  } catch (err: any) {
+    uni.showToast({ title: '加载订单失败: ' + (err.message || ''), icon: 'none' });
+    setTimeout(() => uni.navigateBack(), 1200);
+  }
+}
+
+onLoad((options: any) => {
+  if (options.id) {
+    isEdit.value = true;
+    orderId.value = Number(options.id);
+    loadOrderForEdit(orderId.value);
+  } else {
+    uni.setNavigationBarTitle({ title: '创建订单' });
+  }
+});
+
 async function uploadImage() {
   uni.chooseImage({
     count: 1,
@@ -397,6 +445,16 @@ async function handleSubmit() {
       colorSizes,
       remark: form.remark.trim() || undefined,
     };
+
+    if (isEdit.value) {
+      // 编辑模式：更新基础信息 + 矩阵
+      await updateOrder(orderId.value, payload);
+      submitStatus.value = '成功!';
+      uni.showToast({ title: '订单已更新', icon: 'success' });
+      uni.$emit('orderUpdated');
+      setTimeout(() => uni.navigateBack(), 1500);
+      return;
+    }
 
     await createOrder(payload);
     submitStatus.value = '成功!';

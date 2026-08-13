@@ -187,3 +187,90 @@ export class UpdateTaStageDto {
   @IsOptional()
   remark?: string;
 }
+
+export class CreateFabricDto {
+  @IsString()
+  @IsNotEmpty({ message: '面料品名不能为空' })
+  fabricName: string;
+
+  @IsString()
+  @IsOptional()
+  color?: string;
+
+  @IsString()
+  @IsOptional()
+  specification?: string;
+
+  @IsInt()
+  @IsOptional()
+  usagePerPiece?: number;
+
+  @IsInt()
+  @IsOptional()
+  totalDemand?: number;
+
+  @IsString()
+  @IsOptional()
+  supplierName?: string;
+
+  @IsDateString()
+  @IsOptional()
+  orderDate?: string;      // 下单日期
+
+  @IsDateString()
+  @IsOptional()
+  plannedDate?: string;    // 计划完成日期
+
+  @IsString()
+  @IsOptional()
+  notes?: string;
+}
+
+export class UpdateFabricDto {
+  @IsString()
+  @IsOptional()
+  fabricName?: string;
+
+  @IsString()
+  @IsOptional()
+  color?: string;
+
+  @IsString()
+  @IsOptional()
+  specification?: string;
+
+  @IsInt()
+  @IsOptional()
+  usagePerPiece?: number;
+
+  @IsInt()
+  @IsOptional()
+  totalDemand?: number;
+
+  @IsString()
+  @IsOptional()
+  supplierName?: string;
+
+  @IsDateString()
+  @IsOptional()
+  orderDate?: string;      // 下单日期
+
+  @IsDateString()
+  @IsOptional()
+  plannedDate?: string;    // 计划完成日期
+
+  @IsString()
+  @IsOptional()
+  notes?: string;
+}
+
+export class UpdateVisibilityDto {
+  @IsString()
+  @IsOptional()
+  visibility?: 'restricted' | 'company';
+
+  @IsArray()
+  @IsOptional()
+  @IsInt({ each: true })
+  visibleUserIds?: number[];
+}

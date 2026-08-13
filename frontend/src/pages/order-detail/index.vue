@@ -48,6 +48,14 @@
             <text>延误 {{ order.taSummary.delayed }}项</text>
           </view>
         </view>
+
+        <!-- 管理操作区（编辑/状态/可见性/删除） -->
+        <view v-if="canEditBaseInfo || canDelete || canSetVisibility" class="summary-actions">
+          <view v-if="canEditBaseInfo" class="action-btn" @tap="goEditOrder"><text>编辑订单</text></view>
+          <view v-if="canChangeStatus" class="action-btn" @tap="openStatusModal"><text>修改状态</text></view>
+          <view v-if="canSetVisibility" class="action-btn" @tap="openVisibilityModal"><text>可见性设置</text></view>
+          <view v-if="canDelete" class="action-btn action-danger" @tap="confirmDeleteOrder"><text>删除订单</text></view>
+        </view>
       </view>
 
       <!-- Tab 切换 -->
@@ -173,30 +181,39 @@
 
         <!-- ========== Tab 2: 物料进度 ========== -->
         <view v-if="activeTab === 'trims'" class="tab-panel">
-          <!-- 面料信息卡片 -->
+          <!-- 面料信息卡片（可编辑） -->
           <view class="card">
-            <view class="card-title">面料信息</view>
-            <view v-if="fabricItems.length > 0">
-              <view v-for="(fabric, idx) in fabricItems" :key="idx" class="fabric-item">
+            <view class="card-title-row">
+              <text class="card-title-inline">面料信息</text>
+              <view v-if="canManageFabric" class="trim-manage-btn" @tap="openFabricModal(null)">
+                <text>{{ order.fabrics?.length ? '编辑' : '添加面料' }}</text>
+              </view>
+            </view>
+            <view v-if="order.fabrics && order.fabrics.length > 0">
+              <view v-for="fabric in order.fabrics" :key="fabric.id" class="fabric-item">
                 <view class="info-row">
                   <text class="info-label">品名</text>
-                  <text class="info-value">{{ fabric.name || '-' }}</text>
+                  <text class="info-value">{{ fabric.fabricName || '-' }}</text>
                 </view>
                 <view class="info-row">
                   <text class="info-label">颜色</text>
                   <text class="info-value">{{ fabric.color || '-' }}</text>
                 </view>
                 <view class="info-row">
-                  <text class="info-label">数量</text>
-                  <text class="info-value">{{ fabric.qty || '-' }} {{ fabric.unit || '米' }}</text>
+                  <text class="info-label">订单数量</text>
+                  <text class="info-value">{{ fabric.totalDemand ?? '-' }}</text>
                 </view>
                 <view class="info-row">
-                  <text class="info-label">计划到厂</text>
-                  <text class="info-value">{{ fabric.planDate ? formatDate(fabric.planDate) : '-' }}</text>
+                  <text class="info-label">供应商</text>
+                  <text class="info-value">{{ fabric.supplierName || '-' }}</text>
                 </view>
                 <view class="info-row">
-                  <text class="info-label">实际到厂</text>
-                  <text class="info-value">{{ fabric.actualDate ? formatDate(fabric.actualDate) : '-' }}</text>
+                  <text class="info-label">下单日期</text>
+                  <text class="info-value">{{ fabric.orderDate ? formatDate(fabric.orderDate) : '-' }}</text>
+                </view>
+                <view class="info-row">
+                  <text class="info-label">计划完成</text>
+                  <text class="info-value">{{ fabric.plannedDate ? formatDate(fabric.plannedDate) : '-' }}</text>
                 </view>
               </view>
             </view>
@@ -208,7 +225,7 @@
             <view class="card-title-row">
               <text class="card-title-inline">物料齐套状态</text>
               <view
-                v-if="userStore.isManager"
+                v-if="canManageThisOrderTrims"
                 class="trim-manage-btn"
                 @tap="goTrimManage"
               >
@@ -220,7 +237,7 @@
                 {{ order.trimsSummary?.allReady ? '全部物料已齐套' : `物料齐套中 ${order.trimsSummary?.ready || 0}/${order.trimsSummary?.total || 0}` }}
               </text>
               <view
-                v-if="userStore.isManager"
+                v-if="canManageThisOrderTrims"
                 class="banner-action"
                 @tap="handleCheckTrimsReady"
               >
@@ -348,17 +365,9 @@
                 <text class="tag" :class="STATUS_COLORS[stage.status]">
                   {{ STATUS_LABELS[stage.status] }}
                 </text>
-                <!-- 管理端可更新所有阶段 -->
+                <!-- 按角色权限显示更新按钮（理单全部/跟单不含出货/工厂仅大货/管理员全部） -->
                 <view
-                  v-if="userStore.isManager"
-                  class="ta-update-btn"
-                  @tap="showStageUpdate(stage)"
-                >
-                  <text>更新</text>
-                </view>
-                <!-- 工厂端可更新大货生产阶段 -->
-                <view
-                  v-if="canUpdateStage(stage) && userStore.isFactory"
+                  v-if="canUpdateStage(stage)"
                   class="ta-update-btn"
                   @tap="showStageUpdate(stage)"
                 >
@@ -448,6 +457,115 @@
         </view>
       </view>
     </view>
+
+    <!-- ========== 订单状态修改弹窗 ========== -->
+    <view v-if="showStatusModal" class="modal-mask" @tap="showStatusModal = false">
+      <view class="modal-content" @tap.stop>
+        <view class="modal-header">
+          <text class="modal-title">修改订单状态</text>
+          <view class="modal-close" @tap="showStatusModal = false"><text>x</text></view>
+        </view>
+        <view class="modal-body">
+          <view class="form-item">
+            <text class="form-label required">订单状态</text>
+            <picker mode="selector" :range="orderStatusOptions" :range-key="'label'" @change="onOrderStatusChange">
+              <view class="form-picker">
+                <text>{{ orderStatusLabel || '请选择' }}</text>
+                <text class="picker-arrow">></text>
+              </view>
+            </picker>
+          </view>
+        </view>
+        <view class="modal-footer">
+          <button class="btn-cancel" @tap="showStatusModal = false">取消</button>
+          <button class="btn-submit" @tap="handleStatusUpdate">保存</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- ========== 可见性设置弹窗（管理员） ========== -->
+    <view v-if="showVisibilityModal" class="modal-mask" @tap="showVisibilityModal = false">
+      <view class="modal-content" @tap.stop>
+        <view class="modal-header">
+          <text class="modal-title">订单可见性设置</text>
+          <view class="modal-close" @tap="showVisibilityModal = false"><text>x</text></view>
+        </view>
+        <scroll-view scroll-y class="modal-body">
+          <view class="form-item">
+            <text class="form-label required">可见范围</text>
+            <picker mode="selector" :range="visibilityOptions" :range-key="'label'" @change="onVisibilityModeChange">
+              <view class="form-picker">
+                <text>{{ visibilityModeLabel }}</text>
+                <text class="picker-arrow">></text>
+              </view>
+            </picker>
+          </view>
+          <view v-if="visibilityForm.visibility === 'restricted'" class="form-item">
+            <text class="form-label">额外授权可见的成员</text>
+            <view v-if="companyMembers.length === 0" class="empty-text">暂无可选成员</view>
+            <view v-for="member in companyMembers" :key="member.id" class="member-check-row" @tap="toggleMember(member.id)">
+              <text class="member-check-name">{{ member.realName }}（{{ ROLE_LABELS[member.role] }}）</text>
+              <text class="member-check-box" :class="{ checked: isMemberChecked(member.id) }">{{ isMemberChecked(member.id) ? '✓' : '' }}</text>
+            </view>
+          </view>
+          <view v-else class="hint-text">选择"公司全员"后，公司内所有成员均可查看此订单。</view>
+        </scroll-view>
+        <view class="modal-footer">
+          <button class="btn-cancel" @tap="showVisibilityModal = false">取消</button>
+          <button class="btn-submit" @tap="handleVisibilityUpdate">保存</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- ========== 面料编辑弹窗 ========== -->
+    <view v-if="showFabricModal" class="modal-mask" @tap="showFabricModal = false">
+      <view class="modal-content" @tap.stop>
+        <view class="modal-header">
+          <text class="modal-title">{{ fabricModal.id ? '编辑面料' : '添加面料' }}</text>
+          <view class="modal-close" @tap="showFabricModal = false"><text>x</text></view>
+        </view>
+        <scroll-view scroll-y class="modal-body">
+          <view class="form-item">
+            <text class="form-label required">面料品名</text>
+            <input v-model="fabricModal.fabricName" class="form-input" placeholder="如: 全棉汗布" placeholder-class="placeholder" />
+          </view>
+          <view class="form-item">
+            <text class="form-label">颜色</text>
+            <input v-model="fabricModal.color" class="form-input" placeholder="如: 藏青" placeholder-class="placeholder" />
+          </view>
+          <view class="form-item">
+            <text class="form-label">订单数量</text>
+            <input :value="String(fabricModal.totalDemand ?? '')" class="form-input" type="number" placeholder="如: 5000" placeholder-class="placeholder" @input="(e: any) => fabricModal.totalDemand = parseInt(e.detail.value) || 0" />
+          </view>
+          <view class="form-item">
+            <text class="form-label">供应商名字</text>
+            <input v-model="fabricModal.supplierName" class="form-input" placeholder="如: 某某纺织" placeholder-class="placeholder" />
+          </view>
+          <view class="form-item">
+            <text class="form-label">下单日期</text>
+            <picker mode="date" :value="fabricModal.orderDate" @change="(e: any) => fabricModal.orderDate = e.detail.value">
+              <view class="form-picker">
+                <text :class="{ placeholder: !fabricModal.orderDate }">{{ fabricModal.orderDate || '选择日期' }}</text>
+                <text class="picker-arrow">></text>
+              </view>
+            </picker>
+          </view>
+          <view class="form-item">
+            <text class="form-label">计划完成日期</text>
+            <picker mode="date" :value="fabricModal.plannedDate" @change="(e: any) => fabricModal.plannedDate = e.detail.value">
+              <view class="form-picker">
+                <text :class="{ placeholder: !fabricModal.plannedDate }">{{ fabricModal.plannedDate || '选择日期' }}</text>
+                <text class="picker-arrow">></text>
+              </view>
+            </picker>
+          </view>
+        </scroll-view>
+        <view class="modal-footer">
+          <button class="btn-cancel" @tap="showFabricModal = false">取消</button>
+          <button class="btn-submit" @tap="handleFabricSave">保存</button>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -455,7 +573,13 @@
 import { ref, computed, reactive, onMounted, onUnmounted } from 'vue';
 import { onLoad } from '@dcloudio/uni-app';
 import { useUserStore } from '../../stores/user';
-import { getOrderDetail, updateTaStage, checkTrimsReady } from '../../api/orders';
+import {
+  getOrderDetail, updateTaStage, checkTrimsReady,
+  updateOrderStatus, deleteOrder, updateOrderVisibility,
+  addFabric, updateFabric,
+} from '../../api/orders';
+import { getCompanyInfo } from '../../api/company';
+import type { MemberInfo } from '../../api/company';
 import { subscribeOrderLogs, unsubscribeOrderLogs } from '../../utils/realtime';
 import {
   ORDER_STATUS_LABELS,
@@ -471,9 +595,6 @@ const order = ref<OrderDetail | null>(null);
 const loading = ref(true);
 const activeTab = ref('info');
 const orderId = ref(0);
-
-/** 面料信息（从订单remark或专用字段解析） */
-const fabricItems = ref<any[]>([]);
 
 /** 可见 Tab（按角色过滤） */
 const visibleTabs = computed(() => {
@@ -499,6 +620,45 @@ const taCategories = [
   { key: 'inspection', label: '验货阶段' },
   { key: 'shipping', label: '出货阶段' },
 ];
+
+/** ========== 权限计算属性 ========== */
+/** 当前用户是否为该订单的负责理单 */
+function isOrderCoordinator(): boolean {
+  const me = userStore.userInfo;
+  if (!me || !order.value) return false;
+  return Number(order.value.coordinator?.id) === Number(me.id) ||
+    (!order.value.coordinatorRegistered && order.value.coordinatorName === me.realName);
+}
+/** 当前用户是否为该订单的负责跟单 */
+function isOrderMerchandiser(): boolean {
+  const me = userStore.userInfo;
+  if (!me || !order.value) return false;
+  return Number(order.value.merchandiser?.id) === Number(me.id) ||
+    (!order.value.merchandiserRegistered && order.value.merchandiserName === me.realName);
+}
+/** 可编辑基础信息 / 修改状态（管理员或该订单负责理单） */
+const canEditBaseInfo = computed(() => userStore.isAdmin || (userStore.isCoordinator && isOrderCoordinator()));
+const canChangeStatus = computed(() => canEditBaseInfo.value);
+/** 可删除订单（仅管理员） */
+const canDelete = computed(() => userStore.isAdmin);
+/** 可设置可见性（仅管理员） */
+const canSetVisibility = computed(() => userStore.isAdmin);
+/** 可管理面料（管理员或该订单负责理单） */
+const canManageFabric = computed(() => userStore.isAdmin || (userStore.isCoordinator && isOrderCoordinator()));
+/** 可管理该订单物料（管理员或该订单负责理单） */
+const canManageThisOrderTrims = computed(() => userStore.isAdmin || (userStore.isCoordinator && isOrderCoordinator()));
+
+/** T&A 阶段更新权限：管理员全部；理单全部（负责人）；跟单非出货（负责人）；工厂仅大货 */
+function canUpdateStage(stage: OrderTaStage): boolean {
+  if (userStore.isFactory) return stage.stageCategory === 'production';
+  if (userStore.isAdmin) return true;
+  if (userStore.isCoordinator) return isOrderCoordinator();
+  if (userStore.isMerchandiser) {
+    if (stage.stageCategory === 'shipping') return false;
+    return isOrderMerchandiser();
+  }
+  return false;
+}
 
 /** 物料状态映射 */
 const TRIM_BULK_LABELS_QTY: Record<string, string> = {
@@ -552,31 +712,10 @@ async function loadOrderDetail() {
   loading.value = true;
   try {
     order.value = await getOrderDetail(orderId.value);
-    // 解析面料信息
-    parseFabricInfo();
   } catch (err: any) {
     uni.showToast({ title: '加载失败: ' + err.message, icon: 'none' });
   } finally {
     loading.value = false;
-  }
-}
-
-/** 解析面料信息（从trims中筛选面料类型，或从order字段） */
-function parseFabricInfo() {
-  if (!order.value) return;
-  // 从物料列表中筛选面料类型
-  const fabrics = order.value.trims?.filter((t: any) => t.trimCategory === 'fabric' || t.trimName?.includes('面料') || t.trimName?.includes('面布'));
-  if (fabrics && fabrics.length > 0) {
-    fabricItems.value = fabrics.map((f: any) => ({
-      name: f.trimName,
-      color: f.specification || '',
-      qty: f.totalDemand,
-      unit: f.unit || '米',
-      planDate: f.bulkEtd || '',
-      actualDate: f.bulkEta || '',
-    }));
-  } else {
-    fabricItems.value = [];
   }
 }
 
@@ -596,11 +735,172 @@ function getSizeTotal(size: string): number {
 function getStagesByCategory(category: string): OrderTaStage[] {
   return order.value?.taStages.filter((s) => s.stageCategory === category) || [];
 }
-function canUpdateStage(stage: OrderTaStage): boolean {
-  if (userStore.isFactory) {
-    return stage.stageCategory === 'production';
+
+/** 跳转编辑订单（order-create 编辑模式） */
+function goEditOrder() {
+  uni.navigateTo({ url: `/pages/order-create/index?id=${orderId.value}` });
+}
+
+/** ========== 订单状态修改 ========== */
+const showStatusModal = ref(false);
+const orderStatusOptions = Object.keys(ORDER_STATUS_LABELS).map((value) => ({
+  value,
+  label: ORDER_STATUS_LABELS[value],
+}));
+const newStatus = ref<OrderStatus>(order.value?.orderStatus || 'confirmed');
+const orderStatusLabel = computed(() => orderStatusOptions.find((s) => s.value === newStatus.value)?.label || '');
+
+function openStatusModal() {
+  newStatus.value = (order.value?.orderStatus || 'confirmed') as OrderStatus;
+  showStatusModal.value = true;
+}
+function onOrderStatusChange(e: any) {
+  newStatus.value = orderStatusOptions[e.detail.value].value as OrderStatus;
+}
+async function handleStatusUpdate() {
+  if (!newStatus.value) return;
+  try {
+    await updateOrderStatus(orderId.value, newStatus.value);
+    uni.showToast({ title: '状态已更新', icon: 'success' });
+    showStatusModal.value = false;
+    await loadOrderDetail();
+  } catch (err: any) {
+    uni.showToast({ title: '更新失败: ' + (err.message || '无权限'), icon: 'none' });
   }
-  return userStore.isManager;
+}
+
+/** ========== 删除订单（管理员） ========== */
+function confirmDeleteOrder() {
+  uni.showModal({
+    title: '删除订单',
+    content: `确定删除订单 ${order.value?.orderNo} 吗？删除后所有人将无法查看，操作将记录日志。`,
+    confirmColor: '#A32D2D',
+    success: async (res) => {
+      if (!res.confirm) return;
+      try {
+        await deleteOrder(orderId.value);
+        uni.showToast({ title: '订单已删除', icon: 'success' });
+        uni.$emit('orderDeleted');
+        setTimeout(() => uni.navigateBack(), 800);
+      } catch (err: any) {
+        uni.showToast({ title: '删除失败: ' + (err.message || ''), icon: 'none' });
+      }
+    },
+  });
+}
+
+/** ========== 可见性设置（管理员） ========== */
+const showVisibilityModal = ref(false);
+const companyMembers = ref<MemberInfo[]>([]);
+const visibilityOptions = [
+  { value: 'restricted', label: '仅相关人员+授权成员' },
+  { value: 'company', label: '公司全员可见' },
+];
+const visibilityForm = reactive({
+  visibility: 'restricted' as 'restricted' | 'company',
+  visibleUserIds: [] as number[],
+});
+const visibilityModeLabel = computed(() =>
+  visibilityOptions.find((o) => o.value === visibilityForm.visibility)?.label || '',
+);
+
+async function openVisibilityModal() {
+  try {
+    if (companyMembers.value.length === 0) {
+      const info = await getCompanyInfo();
+      // 可选授权成员：理单/跟单/客户/工厂（不含管理员）
+      companyMembers.value = (info.users || []).filter((u: any) => u.role !== 'admin' && u.status === 'active');
+    }
+    visibilityForm.visibility = order.value?.visibility || 'restricted';
+    visibilityForm.visibleUserIds = [...(order.value?.visibleUserIds || [])];
+    showVisibilityModal.value = true;
+  } catch (err: any) {
+    uni.showToast({ title: '加载成员失败', icon: 'none' });
+  }
+}
+function onVisibilityModeChange(e: any) {
+  visibilityForm.visibility = visibilityOptions[e.detail.value].value as 'restricted' | 'company';
+}
+function toggleMember(id: number) {
+  const idx = visibilityForm.visibleUserIds.indexOf(id);
+  if (idx >= 0) visibilityForm.visibleUserIds.splice(idx, 1);
+  else visibilityForm.visibleUserIds.push(id);
+}
+function isMemberChecked(id: number): boolean {
+  return visibilityForm.visibleUserIds.includes(id);
+}
+async function handleVisibilityUpdate() {
+  try {
+    await updateOrderVisibility(orderId.value, {
+      visibility: visibilityForm.visibility,
+      visibleUserIds: visibilityForm.visibleUserIds,
+    });
+    uni.showToast({ title: '可见性已更新', icon: 'success' });
+    showVisibilityModal.value = false;
+    await loadOrderDetail();
+  } catch (err: any) {
+    uni.showToast({ title: '更新失败: ' + (err.message || ''), icon: 'none' });
+  }
+}
+
+/** ========== 面料编辑 ========== */
+const showFabricModal = ref(false);
+const fabricModal = reactive({
+  id: 0,
+  fabricName: '',
+  color: '',
+  totalDemand: 0 as number | undefined,
+  supplierName: '',
+  orderDate: '',
+  plannedDate: '',
+});
+
+function openFabricModal(fabric: any) {
+  if (fabric) {
+    fabricModal.id = fabric.id;
+    fabricModal.fabricName = fabric.fabricName || '';
+    fabricModal.color = fabric.color || '';
+    fabricModal.totalDemand = fabric.totalDemand ?? undefined;
+    fabricModal.supplierName = fabric.supplierName || '';
+    fabricModal.orderDate = fabric.orderDate || '';
+    fabricModal.plannedDate = fabric.plannedDate || '';
+  } else {
+    fabricModal.id = 0;
+    fabricModal.fabricName = '';
+    fabricModal.color = '';
+    fabricModal.totalDemand = undefined;
+    fabricModal.supplierName = '';
+    fabricModal.orderDate = '';
+    fabricModal.plannedDate = '';
+  }
+  showFabricModal.value = true;
+}
+
+async function handleFabricSave() {
+  if (!fabricModal.fabricName.trim()) {
+    uni.showToast({ title: '请填写面料品名', icon: 'none' });
+    return;
+  }
+  const payload = {
+    fabricName: fabricModal.fabricName.trim(),
+    color: fabricModal.color.trim() || undefined,
+    totalDemand: fabricModal.totalDemand || 0,
+    supplierName: fabricModal.supplierName.trim() || undefined,
+    orderDate: fabricModal.orderDate || undefined,
+    plannedDate: fabricModal.plannedDate || undefined,
+  };
+  try {
+    if (fabricModal.id) {
+      await updateFabric(orderId.value, fabricModal.id, payload);
+    } else {
+      await addFabric(orderId.value, payload);
+    }
+    uni.showToast({ title: '保存成功', icon: 'success' });
+    showFabricModal.value = false;
+    await loadOrderDetail();
+  } catch (err: any) {
+    uni.showToast({ title: '保存失败: ' + (err.message || ''), icon: 'none' });
+  }
 }
 
 /** 显示阶段更新弹窗 */
@@ -775,6 +1075,11 @@ onUnmounted(() => {
 .badge-red { background: #FCEBEB; color: #A32D2D; }
 .badge-blue { background: #E6F1FB; color: #185FA5; }
 
+/* 管理操作区 */
+.summary-actions { display: flex; gap: 16rpx; margin-top: 20rpx; flex-wrap: wrap; border-top: 1rpx solid #f0f0f0; padding-top: 20rpx; }
+.action-btn { padding: 10rpx 24rpx; border-radius: 10rpx; font-size: 26rpx; background: #E6F1FB; color: #185FA5; }
+.action-danger { background: #FCEBEB; color: #A32D2D; }
+
 /* Tab */
 .tabs {
   display: flex;
@@ -899,6 +1204,13 @@ onUnmounted(() => {
 .log-content { display: flex; flex-direction: column; gap: 4rpx; }
 .log-user { font-size: 26rpx; color: #185FA5; font-weight: 500; }
 .log-summary { font-size: 26rpx; color: #333333; }
+
+/* 可见性设置成员多选 */
+.member-check-row { display: flex; justify-content: space-between; align-items: center; padding: 16rpx 4rpx; border-bottom: 1rpx solid #f5f5f5; }
+.member-check-name { font-size: 26rpx; color: #2C2C2A; }
+.member-check-box { width: 36rpx; height: 36rpx; border: 2rpx solid #C0C0C0; border-radius: 8rpx; display: flex; align-items: center; justify-content: center; font-size: 24rpx; color: #fff; }
+.member-check-box.checked { background: #185FA5; border-color: #185FA5; }
+.hint-text { font-size: 24rpx; color: #888780; padding: 16rpx 4rpx; line-height: 1.6; }
 
 /* 弹窗 */
 .modal-mask {

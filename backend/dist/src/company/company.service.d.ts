@@ -49,12 +49,14 @@ export declare class CompanyService {
         username: string;
         realName: string;
         role: string;
+        teamId: number | null;
         syncedOrders: boolean;
     }>;
     quickRegister(companyId: number, adminId: number, dto: QuickRegisterDto): Promise<{
         id: number;
         realName: string;
         role: string;
+        teamId: number | null;
         syncedOrders: boolean;
     }>;
     updateMember(companyId: number, adminId: number, memberId: number, dto: UpdateMemberDto): Promise<{

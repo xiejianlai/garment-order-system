@@ -37,7 +37,7 @@ let TrimsController = class TrimsController {
 exports.TrimsController = TrimsController;
 __decorate([
     (0, common_1.Post)(':orderId'),
-    (0, roles_decorator_1.Roles)('admin', 'merchandiser'),
+    (0, roles_decorator_1.Roles)('admin', 'coordinator'),
     (0, swagger_1.ApiOperation)({ summary: '为订单添加辅料' }),
     __param(0, (0, common_1.Param)('orderId')),
     __param(1, (0, common_1.Body)()),
@@ -48,7 +48,7 @@ __decorate([
 ], TrimsController.prototype, "addTrim", null);
 __decorate([
     (0, common_1.Patch)(':trimId/status'),
-    (0, roles_decorator_1.Roles)('admin', 'merchandiser'),
+    (0, roles_decorator_1.Roles)('admin', 'coordinator'),
     (0, swagger_1.ApiOperation)({ summary: '更新辅料进度（自动判定齐套）' }),
     __param(0, (0, common_1.Param)('trimId')),
     __param(1, (0, common_1.Body)()),

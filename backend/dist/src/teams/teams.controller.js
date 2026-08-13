@@ -16,6 +16,8 @@ exports.TeamsController = void 0;
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
+const roles_guard_1 = require("../common/guards/roles.guard");
+const roles_decorator_1 = require("../common/decorators/roles.decorator");
 const current_user_decorator_1 = require("../common/decorators/current-user.decorator");
 const teams_service_1 = require("./teams.service");
 const team_dto_1 = require("./dto/team.dto");
@@ -39,7 +41,8 @@ let TeamsController = class TeamsController {
 exports.TeamsController = TeamsController;
 __decorate([
     (0, common_1.Get)(),
-    (0, swagger_1.ApiOperation)({ summary: '团队列表（公司内，登录用户可见）' }),
+    (0, roles_decorator_1.Roles)('admin'),
+    (0, swagger_1.ApiOperation)({ summary: '团队列表（公司内，仅管理员）' }),
     __param(0, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [Object]),
@@ -76,7 +79,7 @@ __decorate([
 exports.TeamsController = TeamsController = __decorate([
     (0, swagger_1.ApiTags)('团队 Teams'),
     (0, common_1.Controller)('teams'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     (0, swagger_1.ApiBearerAuth)(),
     __metadata("design:paramtypes", [teams_service_1.TeamsService])
 ], TeamsController);

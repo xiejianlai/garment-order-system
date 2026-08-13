@@ -156,10 +156,18 @@ let TrimsService = class TrimsService {
     async addTrim(orderId, dto, user) {
         const order = await this.prisma.order.findUnique({
             where: { id: BigInt(orderId) },
-            select: { totalQty: true },
+            select: { id: true, companyId: true, totalQty: true, deletedAt: true, coordinatorId: true, coordinatorName: true },
         });
-        if (!order)
+        if (!order || order.deletedAt)
             throw new common_1.NotFoundException('订单不存在');
+        if (Number(order.companyId) !== user.companyId)
+            throw new common_1.ForbiddenException();
+        if (user.role === 'coordinator') {
+            const isMine = Number(order.coordinatorId) === Number(user.userId) ||
+                (order.coordinatorName === user.realName && !order.coordinatorId);
+            if (!isMine)
+                throw new common_1.ForbiddenException('仅能管理自己负责的订单物料');
+        }
         const totalDemand = dto.totalDemand && dto.totalDemand > 0
             ? dto.totalDemand
             : Math.ceil(dto.usagePerPiece * order.totalQty);
@@ -204,9 +212,20 @@ let TrimsService = class TrimsService {
     async updateTrimStatus(trimId, dto, user) {
         const trim = await this.prisma.orderTrim.findUnique({
             where: { id: BigInt(trimId) },
+            include: { order: { select: { companyId: true, deletedAt: true, coordinatorId: true, coordinatorName: true } } },
         });
         if (!trim)
             throw new common_1.NotFoundException('辅料记录不存在');
+        if (Number(trim.order.companyId) !== user.companyId)
+            throw new common_1.ForbiddenException();
+        if (trim.order.deletedAt)
+            throw new common_1.NotFoundException('订单不存在');
+        if (user.role === 'coordinator') {
+            const isMine = Number(trim.order.coordinatorId) === Number(user.userId) ||
+                (trim.order.coordinatorName === user.realName && !trim.order.coordinatorId);
+            if (!isMine)
+                throw new common_1.ForbiddenException('仅能管理自己负责的订单物料');
+        }
         const updateData = {};
         const changes = [];
         if (dto.samplingStatus && dto.samplingStatus !== trim.samplingStatus) {

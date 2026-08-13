@@ -166,6 +166,7 @@ let CompanyService = class CompanyService {
             username: member.username,
             realName: member.realName,
             role: member.role,
+            teamId: member.teamId ? Number(member.teamId) : null,
             syncedOrders: true,
         };
     }
@@ -198,6 +199,7 @@ let CompanyService = class CompanyService {
             id: Number(member.id),
             realName: member.realName,
             role: member.role,
+            teamId: member.teamId ? Number(member.teamId) : null,
             syncedOrders: true,
         };
     }

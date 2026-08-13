@@ -49,12 +49,14 @@ export declare class CompanyController {
         username: string;
         realName: string;
         role: string;
+        teamId: number | null;
         syncedOrders: boolean;
     }>;
     quickRegister(user: JwtPayload, dto: QuickRegisterDto): Promise<{
         id: number;
         realName: string;
         role: string;
+        teamId: number | null;
         syncedOrders: boolean;
     }>;
     updateMember(user: JwtPayload, memberId: string, dto: UpdateMemberDto): Promise<{

@@ -3,12 +3,12 @@
 
   功能:
   1. 查看订单所有物料列表
-  2. 新增物料（admin/merchandiser）
+  2. 新增物料（admin/coordinator）
   3. 更新物料打样/大货进度状态（含完整时间填写）
   4. 齐套状态可视化
   5. 删除物料
 
-  权限: admin/merchandiser 可增删改, factory 只读
+  权限: admin/coordinator(该订单负责理单) 可增删改, 其余只读
 -->
 <template>
   <view class="trim-manage-page">
@@ -441,7 +441,7 @@ import {
 import type { OrderTrim } from '../../types';
 
 const userStore = useUserStore();
-const canEdit = computed(() => userStore.isAdmin || userStore.role === 'merchandiser');
+const canEdit = computed(() => userStore.isAdmin || userStore.isCoordinator);
 const orderId = ref(0);
 
 // 物料列表

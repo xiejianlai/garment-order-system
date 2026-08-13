@@ -169,6 +169,14 @@ model Order {
   orderStatus       String    @default("draft") @map("order_status") @db.VarChar(20)
   // draft | confirmed | in_progress | shipped | completed | cancelled
   remark            String?   @db.Text
+
+  // 可见性控制: restricted=仅相关人员+显式授权可见 | company=公司内所有人可见
+  visibility        String    @default("restricted") @map("visibility") @db.VarChar(20)
+  // 管理员额外授权的可见用户ID数组（Postgres text[]）
+  visibleUserIds    String[]  @default([]) @map("visible_user_ids")
+  // 软删除标记（管理员删除订单后置位，列表/详情不再可见，操作日志保留）
+  deletedAt         DateTime? @map("deleted_at")
+
   createdBy         BigInt    @map("created_by")
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
@@ -236,7 +244,8 @@ model OrderFabric {
   // not_ordered | ordered | producing | shipped | received
   qtyCheckStatus    String   @default("pending") @map("qty_check_status") @db.VarChar(20)
   // pending | short | sufficient | verified
-  plannedDate       DateTime? @map("planned_date") @db.Date
+  orderDate         DateTime? @map("order_date") @db.Date  // 下单日期
+  plannedDate       DateTime? @map("planned_date") @db.Date  // 计划完成日期
   actualDate        DateTime? @map("actual_date") @db.Date
   notes             String?  @db.VarChar(300)
 

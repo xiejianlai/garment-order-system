@@ -1,5 +1,5 @@
 import { OrdersService } from './orders.service';
-import { CreateOrderDto, UpdateOrderDto, UpdateOrderStatusDto, UpdateTaStageDto } from './dto/create-order.dto';
+import { CreateOrderDto, UpdateOrderDto, UpdateOrderStatusDto, UpdateTaStageDto, CreateFabricDto, UpdateFabricDto, UpdateVisibilityDto } from './dto/create-order.dto';
 import { JwtPayload } from '../common/decorators/current-user.decorator';
 export declare class OrdersController {
     private ordersService;
@@ -23,6 +23,8 @@ export declare class OrdersController {
         merchandiserId: number | null;
         merchandiserName: any;
         orderStatus: any;
+        visibility: any;
+        visibleUserIds: any;
         createdAt: any;
         customer: {
             id: number;
@@ -55,6 +57,8 @@ export declare class OrdersController {
             merchandiserId: number | null;
             merchandiserName: any;
             orderStatus: any;
+            visibility: any;
+            visibleUserIds: any;
             createdAt: any;
             customer: {
                 id: number;
@@ -142,6 +146,8 @@ export declare class OrdersController {
         merchandiserId: number | null;
         merchandiserName: any;
         orderStatus: any;
+        visibility: any;
+        visibleUserIds: any;
         createdAt: any;
         customer: {
             id: number;
@@ -162,6 +168,21 @@ export declare class OrdersController {
         updated: boolean;
     }>;
     updateTaStage(id: string, stageCode: string, dto: UpdateTaStageDto, user: JwtPayload): Promise<{
+        updated: boolean;
+        changes: string[];
+    }>;
+    remove(id: string, user: JwtPayload): Promise<{
+        deleted: boolean;
+    }>;
+    updateVisibility(id: string, dto: UpdateVisibilityDto, user: JwtPayload): Promise<{
+        updated: boolean;
+        changes: string[];
+    }>;
+    addFabric(id: string, dto: CreateFabricDto, user: JwtPayload): Promise<{
+        id: number;
+        fabricName: string;
+    }>;
+    updateFabric(id: string, fabricId: string, dto: UpdateFabricDto, user: JwtPayload): Promise<{
         updated: boolean;
         changes: string[];
     }>;

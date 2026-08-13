@@ -22,7 +22,7 @@ export class TrimsController {
   constructor(private trimsService: TrimsService) {}
 
   @Post(':orderId')
-  @Roles('admin', 'merchandiser')
+  @Roles('admin', 'coordinator')
   @ApiOperation({ summary: '为订单添加辅料' })
   async addTrim(
     @Param('orderId') orderId: number,
@@ -33,7 +33,7 @@ export class TrimsController {
   }
 
   @Patch(':trimId/status')
-  @Roles('admin', 'merchandiser')
+  @Roles('admin', 'coordinator')
   @ApiOperation({ summary: '更新辅料进度（自动判定齐套）' })
   async updateStatus(
     @Param('trimId') trimId: number,
