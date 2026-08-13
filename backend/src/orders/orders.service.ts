@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import {
   CreateOrderDto, UpdateOrderDto, UpdateOrderStatusDto, UpdateTaStageDto,
@@ -34,6 +34,17 @@ export class OrdersService {
   async createOrder(dto: CreateOrderDto, user: JwtPayload) {
     const totalQty = dto.colorSizes.reduce((sum, item) => sum + item.quantity, 0);
     const companyId = BigInt(user.companyId);
+
+    // 订单号唯一性预检（含软删除的订单仍占用唯一索引，一并提示）
+    const dupOrder = await this.prisma.order.findFirst({
+      where: { companyId, orderNo: dto.orderNo },
+      select: { id: true, deletedAt: true },
+    });
+    if (dupOrder) {
+      throw new BadRequestException(
+        `订单号 ${dto.orderNo} 已存在${dupOrder.deletedAt ? '（已被删除的历史订单占用，请更换订单号）' : '，请更换订单号'}`
+      );
+    }
 
     // 智能匹配：如果输入的名字匹配已注册用户，自动关联ID
     let coordinatorId: bigint | null = dto.coordinatorId ? BigInt(dto.coordinatorId) : null;
@@ -291,6 +302,19 @@ export class OrdersService {
     const canEdit = user.role === 'admin' ||
       (user.role === 'coordinator' && (Number(order.coordinatorId) === user.userId || order.coordinatorName === user.realName));
     if (!canEdit) throw new ForbiddenException('无编辑权限');
+
+    // 订单号唯一性预检（改单号时，排除自身）
+    if (dto.orderNo && dto.orderNo !== order.orderNo) {
+      const dupOrder = await this.prisma.order.findFirst({
+        where: { companyId: BigInt(user.companyId), orderNo: dto.orderNo, id: { not: BigInt(orderId) } },
+        select: { id: true, deletedAt: true },
+      });
+      if (dupOrder) {
+        throw new BadRequestException(
+          `订单号 ${dto.orderNo} 已存在${dupOrder.deletedAt ? '（已被删除的历史订单占用，请更换订单号）' : '，请更换订单号'}`
+        );
+      }
+    }
 
     const changes: string[] = [];
 

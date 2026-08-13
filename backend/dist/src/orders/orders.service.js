@@ -35,6 +35,13 @@ let OrdersService = class OrdersService {
     async createOrder(dto, user) {
         const totalQty = dto.colorSizes.reduce((sum, item) => sum + item.quantity, 0);
         const companyId = BigInt(user.companyId);
+        const dupOrder = await this.prisma.order.findFirst({
+            where: { companyId, orderNo: dto.orderNo },
+            select: { id: true, deletedAt: true },
+        });
+        if (dupOrder) {
+            throw new common_1.BadRequestException(`订单号 ${dto.orderNo} 已存在${dupOrder.deletedAt ? '（已被删除的历史订单占用，请更换订单号）' : '，请更换订单号'}`);
+        }
         let coordinatorId = dto.coordinatorId ? BigInt(dto.coordinatorId) : null;
         let merchandiserId = dto.merchandiserId ? BigInt(dto.merchandiserId) : null;
         if (!coordinatorId && dto.coordinatorName) {
@@ -252,6 +259,15 @@ let OrdersService = class OrdersService {
             (user.role === 'coordinator' && (Number(order.coordinatorId) === user.userId || order.coordinatorName === user.realName));
         if (!canEdit)
             throw new common_1.ForbiddenException('无编辑权限');
+        if (dto.orderNo && dto.orderNo !== order.orderNo) {
+            const dupOrder = await this.prisma.order.findFirst({
+                where: { companyId: BigInt(user.companyId), orderNo: dto.orderNo, id: { not: BigInt(orderId) } },
+                select: { id: true, deletedAt: true },
+            });
+            if (dupOrder) {
+                throw new common_1.BadRequestException(`订单号 ${dto.orderNo} 已存在${dupOrder.deletedAt ? '（已被删除的历史订单占用，请更换订单号）' : '，请更换订单号'}`);
+            }
+        }
         const changes = [];
         let coordinatorId = dto.coordinatorId ? BigInt(dto.coordinatorId) : order.coordinatorId;
         let merchandiserId = dto.merchandiserId ? BigInt(dto.merchandiserId) : order.merchandiserId;
