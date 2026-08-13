@@ -15,7 +15,9 @@ import type { UserInfo, UserRole, TrialInfo } from '../types';
 import { ROLE_LABELS } from '../types';
 
 export const useUserStore = defineStore('user', () => {
-  const userInfo = ref<UserInfo | null>(null);
+  // 启动时从本地缓存恢复用户信息（含 role），否则冷启动后所有角色判断为 false，
+  // 会导致"修改状态/编辑/删除/可见性/新建"等权限按钮全部隐藏
+  const userInfo = ref<UserInfo | null>(getUserInfo());
   const trial = ref<TrialInfo | null>(null);
   const isLoggedIn = computed(() => !!getToken() && !!userInfo.value);
 
