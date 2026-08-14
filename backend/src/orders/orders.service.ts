@@ -35,14 +35,14 @@ export class OrdersService {
     const totalQty = dto.colorSizes.reduce((sum, item) => sum + item.quantity, 0);
     const companyId = BigInt(user.companyId);
 
-    // 订单号唯一性预检（含软删除的订单仍占用唯一索引，一并提示）
+    // 订单号+款号 组合唯一性预检（同订单号下不同款号可各建一单；含软删除的订单仍占用，一并提示）
     const dupOrder = await this.prisma.order.findFirst({
-      where: { companyId, orderNo: dto.orderNo },
+      where: { companyId, orderNo: dto.orderNo, styleNo: dto.styleNo },
       select: { id: true, deletedAt: true },
     });
     if (dupOrder) {
       throw new BadRequestException(
-        `订单号 ${dto.orderNo} 已存在${dupOrder.deletedAt ? '（已被删除的历史订单占用，请更换订单号）' : '，请更换订单号'}`
+        `订单号 ${dto.orderNo} + 款号 ${dto.styleNo} 已存在${dupOrder.deletedAt ? '（已被删除的历史订单占用，请更换订单号或款号）' : '，请更换订单号或款号'}`
       );
     }
 
@@ -303,15 +303,17 @@ export class OrdersService {
       (user.role === 'coordinator' && (Number(order.coordinatorId) === user.userId || order.coordinatorName === user.realName));
     if (!canEdit) throw new ForbiddenException('无编辑权限');
 
-    // 订单号唯一性预检（改单号时，排除自身）
-    if (dto.orderNo && dto.orderNo !== order.orderNo) {
+    // 订单号+款号 组合唯一性预检（改单号/款号时，排除自身）
+    const newOrderNo = dto.orderNo ?? order.orderNo;
+    const newStyleNo = dto.styleNo ?? order.styleNo;
+    if (newOrderNo !== order.orderNo || newStyleNo !== order.styleNo) {
       const dupOrder = await this.prisma.order.findFirst({
-        where: { companyId: BigInt(user.companyId), orderNo: dto.orderNo, id: { not: BigInt(orderId) } },
+        where: { companyId: BigInt(user.companyId), orderNo: newOrderNo, styleNo: newStyleNo, id: { not: BigInt(orderId) } },
         select: { id: true, deletedAt: true },
       });
       if (dupOrder) {
         throw new BadRequestException(
-          `订单号 ${dto.orderNo} 已存在${dupOrder.deletedAt ? '（已被删除的历史订单占用，请更换订单号）' : '，请更换订单号'}`
+          `订单号 ${newOrderNo} + 款号 ${newStyleNo} 已存在${dupOrder.deletedAt ? '（已被删除的历史订单占用，请更换订单号或款号）' : '，请更换订单号或款号'}`
         );
       }
     }

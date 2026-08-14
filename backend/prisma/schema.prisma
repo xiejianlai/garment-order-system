@@ -195,8 +195,8 @@ model Order {
   logs        OperationLog[]
   files       OrderFile[]
 
-  // 公司内订单号唯一
-  @@unique([companyId, orderNo], map: "uk_company_order_no")
+  // 公司内 订单号+款号 组合唯一（同一订单号下不同款号可各建一单）
+  @@unique([companyId, orderNo, styleNo], map: "uk_company_order_no_style_no")
   @@index([companyId], map: "idx_order_company_id")
   @@index([customerId], map: "idx_customer_id")
   @@index([coordinatorId], map: "idx_coordinator_id")
